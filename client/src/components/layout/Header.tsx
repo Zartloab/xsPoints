@@ -36,18 +36,24 @@ export default function Header() {
             <h1 className="ml-3 text-2xl font-bold text-gray-900">xPoints</h1>
           </div>
           
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex space-x-6">
             <Link href="/">
-              <a className={`${location === '/' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium`}>Dashboard</a>
+              <span className={`${location === '/' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Dashboard</span>
             </Link>
             <Link href="/#convert">
-              <a className={`${location === '/#convert' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium`}>Convert</a>
+              <span className={`${location === '/#convert' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Convert</span>
             </Link>
             <Link href="/#history">
-              <a className={`${location === '/#history' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium`}>History</a>
+              <span className={`${location === '/#history' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>History</span>
             </Link>
-            <Link href="/#link">
-              <a className={`${location === '/#link' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium`}>Link Accounts</a>
+            <Link href="/tokenization">
+              <span className={`${location === '/tokenization' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Tokenization</span>
+            </Link>
+            <Link href="/merchant">
+              <span className={`${location === '/merchant' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Merchant</span>
+            </Link>
+            <Link href="/explorer">
+              <span className={`${location === '/explorer' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Explorer</span>
             </Link>
           </nav>
         </div>

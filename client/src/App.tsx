@@ -7,6 +7,9 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProfilePage from "@/pages/profile-page";
+import TokenizationPage from "@/pages/tokenization-page";
+import MerchantPage from "@/pages/merchant-page";
+import ExplorerPage from "@/pages/explorer-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
@@ -15,6 +18,9 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/tokenization" component={TokenizationPage} />
+      <ProtectedRoute path="/merchant" component={MerchantPage} />
+      <ProtectedRoute path="/explorer" component={ExplorerPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

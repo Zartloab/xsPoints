@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, RefreshCw, History, Link as LinkIcon } from 'lucide-react';
+import { Home, RefreshCw, History, Coins, ShoppingBag, BarChart3 } from 'lucide-react';
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -10,7 +10,8 @@ export default function MobileNav() {
     { id: 'dashboard', href: '/', icon: Home, label: 'Dashboard' },
     { id: 'convert', href: '/#convert', icon: RefreshCw, label: 'Convert' },
     { id: 'history', href: '/#history', icon: History, label: 'History' },
-    { id: 'link', href: '/#link', icon: LinkIcon, label: 'Link' },
+    { id: 'tokenization', href: '/tokenization', icon: Coins, label: 'Tokens' },
+    { id: 'merchant', href: '/merchant', icon: ShoppingBag, label: 'Merchant' },
   ];
   
   const handleTabClick = (tabId: string) => {
@@ -22,13 +23,13 @@ export default function MobileNav() {
       <div className="flex justify-around">
         {tabs.map((tab) => (
           <Link key={tab.id} href={tab.href}>
-            <a
-              className={`flex flex-col items-center py-3 ${activeTab === tab.id ? 'text-primary' : 'text-gray-500'}`}
+            <div
+              className={`flex flex-col items-center py-3 ${activeTab === tab.id ? 'text-primary' : 'text-gray-500'} cursor-pointer`}
               onClick={() => handleTabClick(tab.id)}
             >
               <tab.icon className="h-5 w-5" />
               <span className="text-xs mt-1">{tab.label}</span>
-            </a>
+            </div>
           </Link>
         ))}
       </div>
