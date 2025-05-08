@@ -145,6 +145,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let amountTo = 0;
       let feeApplied = 0;
       
+      // Calculate fee - free up to 10,000 points, 0.5% after that
+      const FREE_CONVERSION_LIMIT = 10000;
+      if (data.amount > FREE_CONVERSION_LIMIT) {
+        const amountOverLimit = data.amount - FREE_CONVERSION_LIMIT;
+        feeApplied = amountOverLimit * 0.005; // 0.5% fee
+        console.log(`Applying conversion fee: ${feeApplied} on ${amountOverLimit} points over 10,000 free limit`);
+      }
+      
+      // Calculate amount after fee deduction
+      const amountAfterFee = data.amount - feeApplied;
+      
       if (data.fromProgram !== "XPOINTS" && data.toProgram !== "XPOINTS") {
         // Convert source -> xPoints -> destination
         const sourceToXpRate = await storage.getExchangeRate(data.fromProgram, "XPOINTS");
@@ -154,8 +165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Exchange rate not found" });
         }
         
-        // Calculate conversion
-        const xpAmount = data.amount * Number(sourceToXpRate.rate);
+        // Calculate conversion using amount after fee
+        const xpAmount = amountAfterFee * Number(sourceToXpRate.rate);
         amountTo = xpAmount * Number(xpToDestRate.rate);
       } else {
         // Direct conversion
@@ -164,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Exchange rate not found" });
         }
         
-        amountTo = data.amount * Number(rate.rate);
+        amountTo = amountAfterFee * Number(rate.rate);
       }
       
       // Update wallet balances
@@ -185,7 +196,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({
         transaction,
         fromBalance: sourceWallet.balance - data.amount,
-        toBalance: destWallet.balance + amountTo
+        toBalance: destWallet.balance + amountTo,
+        fee: feeApplied,
+        feePercentage: feeApplied > 0 ? "0.5%" : "0%",
+        conversionDetails: {
+          originalAmount: data.amount,
+          amountAfterFee: amountAfterFee,
+          convertedAmount: amountTo,
+          freeLimit: FREE_CONVERSION_LIMIT
+        }
       });
     } catch (error) {
       console.error("Error converting points:", error);
