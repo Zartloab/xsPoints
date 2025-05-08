@@ -55,6 +55,9 @@ export default function Header() {
             <Link href="/explorer">
               <span className={`${location === '/explorer' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Explorer</span>
             </Link>
+            <Link href="/trading">
+              <span className={`${location === '/trading' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>P2P Trading</span>
+            </Link>
           </nav>
         </div>
         
