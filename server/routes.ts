@@ -2,8 +2,26 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { convertPointsSchema, linkAccountSchema } from "@shared/schema";
+import { convertPointsSchema, linkAccountSchema, type LoyaltyProgram } from "@shared/schema";
 import { z } from 'zod';
+
+// Define interfaces for tokenization and explorer features
+interface TokenLedgerEntry {
+  id: string;
+  userId: number;
+  program: LoyaltyProgram;
+  amount: number;
+  timestamp: Date;
+  status: string;
+}
+
+interface MarketTrend {
+  timestamp: Date;
+  xpointsRate: number;
+  qantasRate: number;
+  gygRate: number;
+  volume: number;
+}
 
 // Schema for tokenization feature
 const tokenizeSchema = z.object({
@@ -221,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // NOTE: This will be updated in the future to query a token_ledger table
       // For now we'll return an empty array
-      const tokenLedger = [];
+      const tokenLedger: TokenLedgerEntry[] = [];
       res.json(tokenLedger);
     } catch (error) {
       console.error("Error fetching token ledger:", error);

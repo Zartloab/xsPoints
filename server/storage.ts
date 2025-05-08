@@ -5,6 +5,9 @@ import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
+// Define a SessionStore type to avoid the namespace error
+type SessionStore = session.Store;
+
 // Session store options
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
@@ -30,12 +33,12 @@ export interface IStorage {
   getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined>;
   
   // Session store
-  sessionStore: any; // Using 'any' to avoid type errors with session.SessionStore
+  sessionStore: SessionStore;
 }
 
 // PostgreSQL Database Storage Implementation
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 
   constructor() {
     // Initialize session store with PostgreSQL
@@ -103,13 +106,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Insert the user with kycVerified field
-    const userWithKyc = {
-      ...insertUser,
-      kycVerified: "unverified"
-    };
-    
-    const [user] = await db.insert(users).values(userWithKyc).returning();
+    // Insert the user, kycVerified defaults to 'unverified'
+    const [user] = await db.insert(users).values(insertUser).returning();
     
     // Create default wallets for new user
     await this.createWallet({
@@ -231,7 +229,7 @@ export class MemStorage implements IStorage {
   currentWalletId: number;
   currentTransactionId: number;
   currentExchangeRateId: number;
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 
   constructor() {
     this.users = new Map();
