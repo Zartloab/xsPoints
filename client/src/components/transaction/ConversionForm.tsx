@@ -50,13 +50,18 @@ export default function ConversionForm() {
   const sourceWallet = wallets?.find(w => w.program === fromProgram);
   const destWallet = wallets?.find(w => w.program === toProgram);
 
+  // State for fee calculation
+  const [conversionFee, setConversionFee] = useState<number>(0);
+  const [feePercentage, setFeePercentage] = useState<string>("0%");
+  const FREE_CONVERSION_LIMIT = 10000;
+  
   // Conversion mutation
   const convertMutation = useMutation({
     mutationFn: async (data: ConvertPointsData) => {
       const res = await apiRequest("POST", "/api/convert", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Conversion successful",
         description: `Successfully converted ${amount} ${fromProgram} to ${calculatedAmount} ${toProgram}`,
@@ -68,6 +73,8 @@ export default function ConversionForm() {
       // Reset form
       setAmount(0);
       setCalculatedAmount(0);
+      setConversionFee(0);
+      setFeePercentage("0%");
     },
     onError: (error: Error) => {
       toast({
@@ -78,22 +85,47 @@ export default function ConversionForm() {
     },
   });
 
-  // Calculate conversion rate and amount
+  // Function to calculate the conversion fee
+  const calculateFee = (amountValue: number): number => {
+    if (amountValue <= FREE_CONVERSION_LIMIT) {
+      return 0;
+    }
+    
+    const amountOverLimit = amountValue - FREE_CONVERSION_LIMIT;
+    return amountOverLimit * 0.005; // 0.5% fee for amount over limit
+  };
+
+  // Calculate conversion rate, fee, and amount
   useEffect(() => {
     if (amount <= 0) {
       setCalculatedAmount(0);
+      setConversionFee(0);
+      setFeePercentage("0%");
       return;
     }
+    
+    // Calculate fee first
+    const fee = calculateFee(amount);
+    setConversionFee(fee);
+    
+    if (fee > 0) {
+      setFeePercentage("0.5%");
+    } else {
+      setFeePercentage("0%");
+    }
+    
+    // Calculate amount after fee deduction
+    const amountAfterFee = amount - fee;
     
     // Direct conversion or via xPoints
     if (fromProgram !== "XPOINTS" && toProgram !== "XPOINTS" && fromToXpRate && xpToDestRate) {
       // Convert via xPoints
-      const xpAmount = amount * Number(fromToXpRate.rate);
+      const xpAmount = amountAfterFee * Number(fromToXpRate.rate);
       const calculated = xpAmount * Number(xpToDestRate.rate);
       setCalculatedAmount(Math.floor(calculated));
     } else if (directRate) {
       // Direct conversion
-      const calculated = amount * Number(directRate.rate);
+      const calculated = amountAfterFee * Number(directRate.rate);
       setCalculatedAmount(Math.floor(calculated));
     }
   }, [amount, fromProgram, toProgram, directRate, fromToXpRate, xpToDestRate]);
@@ -138,6 +170,8 @@ export default function ConversionForm() {
     setFromProgram("QANTAS");
     setToProgram("GYG");
     setCalculatedAmount(0);
+    setConversionFee(0);
+    setFeePercentage("0%");
   };
 
   const getConversionRate = () => {
@@ -170,6 +204,8 @@ export default function ConversionForm() {
                     setFromProgram(value);
                     setAmount(0);
                     setCalculatedAmount(0);
+                    setConversionFee(0);
+                    setFeePercentage("0%");
                   }}
                 >
                   <SelectTrigger className="w-full text-sm bg-transparent border-0 shadow-none focus:ring-0 p-0 h-auto">
@@ -234,6 +270,8 @@ export default function ConversionForm() {
                     setToProgram(value);
                     setAmount(0);
                     setCalculatedAmount(0);
+                    setConversionFee(0);
+                    setFeePercentage("0%");
                   }}
                 >
                   <SelectTrigger className="w-full text-sm bg-transparent border-0 shadow-none focus:ring-0 p-0 h-auto">
@@ -293,7 +331,14 @@ export default function ConversionForm() {
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Conversion Fee</span>
-              <span className="text-sm font-medium">0 xPoints (0%)</span>
+              <span className="text-sm font-medium">
+                {conversionFee.toLocaleString()} {fromProgram} Points ({feePercentage})
+                {conversionFee > 0 && (
+                  <span className="ml-1 text-xs text-gray-500">
+                    (Free up to {FREE_CONVERSION_LIMIT.toLocaleString()} points)
+                  </span>
+                )}
+              </span>
             </div>
             <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
               <span className="text-sm font-medium text-gray-700">You'll receive</span>
