@@ -260,6 +260,12 @@ export default function TradingPage() {
             <p className="text-muted-foreground">
               Trade loyalty points directly with other users at custom rates
             </p>
+            <div className="mt-2 text-xs text-amber-600 flex items-center gap-1 font-medium">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+              </svg>
+              Dynamic Fee Structure: 10% of your savings rate, capped at 3% (minimum 0.5%)
+            </div>
           </div>
           <Dialog open={createTradeOpen} onOpenChange={setCreateTradeOpen}>
             <DialogTrigger asChild>
@@ -607,6 +613,9 @@ export default function TradingPage() {
                         Rate
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Fees
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -629,6 +638,21 @@ export default function TradingPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {parseFloat(trade.rate).toFixed(4)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {trade.sellerId === user?.id ? (
+                            <span className="text-amber-600">
+                              {Number(trade.sellerFee) > 0 ? 
+                                `${Number(trade.sellerFee).toFixed(2)} points` : 
+                                "No fee"}
+                            </span>
+                          ) : (
+                            <span className="text-amber-600">
+                              {Number(trade.buyerFee) > 0 ? 
+                                `${Number(trade.buyerFee).toFixed(2)} points` : 
+                                "No fee"}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <Badge 
@@ -711,6 +735,16 @@ export default function TradingPage() {
                     <TrendingDown className="h-3 w-3 mr-1" />
                     {parseFloat(viewOfferDetails.savings).toFixed(2)}%
                   </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platform Fee</span>
+                  <span className="text-amber-600">
+                    {/* Calculate estimated fee (10% of savings, max 3%) */}
+                    {Math.min(
+                      Math.max(parseFloat(viewOfferDetails.savings) * 0.1, 0.5), 
+                      3
+                    ).toFixed(2)}% of trade
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Expires</span>
