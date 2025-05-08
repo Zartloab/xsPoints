@@ -552,8 +552,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date()
       };
       
+      // Calculate fee based on savings (percentage of market advantage)
+      const marketRateValue = Number(tradeOffer.marketRate);
+      const customRateValue = Number(tradeOffer.customRate);
+      
+      // Calculate savings percentage (how much better than market rate)
+      const savingsPercent = ((marketRateValue - customRateValue) / marketRateValue) * 100;
+      
+      // Dynamic fee: 10% of the savings, with minimum and maximum caps
+      // Higher savings = higher fees, but never more than 3% total
+      const feePercentage = Math.min(Math.max(savingsPercent * 0.1, 0.5), 3) / 100;
+      
+      // Calculate fees for both parties
+      // Seller pays a fee on what they receive
+      const sellerFee = tradeOffer.amountRequested * feePercentage;
+      // Buyer pays no fee to incentivize accepting offers
+      const buyerFee = 0;
+      
+      console.log(`Trade fees - Savings: ${savingsPercent.toFixed(2)}%, Fee rate: ${(feePercentage*100).toFixed(2)}%, Seller fee: ${sellerFee}`);
+      
       // Process the trade
-      // 1. Update seller's wallet: add requested amount
+      // 1. Update seller's wallet: add requested amount minus fees
       // 2. Update buyer's wallet: add offered amount, subtract requested amount
       // 3. Update offer status to completed
       // 4. Create a trade transaction record
@@ -574,8 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amountSold: tradeOffer.amountOffered,
           amountBought: tradeOffer.amountRequested,
           rate: tradeOffer.customRate,
-          sellerFee: 0,
-          buyerFee: 0,
+          sellerFee: sellerFee.toFixed(2),
+          buyerFee: buyerFee.toFixed(2),
           status: "completed"
         }
       });

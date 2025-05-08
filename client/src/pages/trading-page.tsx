@@ -88,6 +88,8 @@ interface TradeTransaction {
   amountSold: number;
   amountBought: number;
   rate: string;
+  sellerFee: string;
+  buyerFee: string;
   status: string;
 }
 
