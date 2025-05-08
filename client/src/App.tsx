@@ -10,6 +10,7 @@ import ProfilePage from "@/pages/profile-page";
 import TokenizationPage from "@/pages/tokenization-page";
 import MerchantPage from "@/pages/merchant-page";
 import ExplorerPage from "@/pages/explorer-page";
+import TradingPage from "@/pages/trading-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/tokenization" component={TokenizationPage} />
       <ProtectedRoute path="/merchant" component={MerchantPage} />
       <ProtectedRoute path="/explorer" component={ExplorerPage} />
+      <ProtectedRoute path="/trading" component={TradingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

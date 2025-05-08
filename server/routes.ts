@@ -9,6 +9,8 @@ import {
   insertBusinessProgramSchema,
   insertBusinessPaymentSchema,
   businessIssuePointsSchema,
+  createTradeOfferSchema,
+  acceptTradeOfferSchema,
   type LoyaltyProgram 
 } from "@shared/schema";
 import { z } from 'zod';
@@ -356,6 +358,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to create promotion" });
+    }
+  });
+
+  // ===== P2P TRADING FEATURES =====
+
+  // Get all open trade offers
+  app.get("/api/trades", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // This endpoint will return all available trade offers excluding the user's own
+      // For now, we'll return a placeholder empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching trade offers:", error);
+      res.status(500).json({ message: "Failed to fetch trade offers" });
+    }
+  });
+
+  // Get user's trade offers
+  app.get("/api/trades/my-offers", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // This endpoint will return all of the user's own trade offers
+      // For now, we'll return a placeholder empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching user's trade offers:", error);
+      res.status(500).json({ message: "Failed to fetch your trade offers" });
+    }
+  });
+
+  // Create a new trade offer
+  app.post("/api/trades", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Validate request body
+      const data = createTradeOfferSchema.parse(req.body);
+      
+      // Check that from and to programs are different
+      if (data.fromProgram === data.toProgram) {
+        return res.status(400).json({ message: "Cannot trade between the same program" });
+      }
+      
+      // Get source wallet to check balance
+      const sourceWallet = await storage.getWallet(req.user!.id, data.fromProgram);
+      if (!sourceWallet) {
+        return res.status(404).json({ message: "Source wallet not found" });
+      }
+      
+      // Check if user has enough balance
+      if (sourceWallet.balance < data.amountOffered) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Get market rate for comparison
+      const marketRate = await storage.getExchangeRate(data.fromProgram, data.toProgram);
+      if (!marketRate) {
+        return res.status(404).json({ message: "Market rate not found" });
+      }
+      
+      // Calculate custom rate and savings
+      const customRate = data.amountRequested / data.amountOffered;
+      const marketRateValue = Number(marketRate.rate);
+      const savings = ((marketRateValue - customRate) / marketRateValue) * 100;
+      
+      // Set expiration date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + data.expiresIn);
+      
+      // Create trade offer
+      // When we implement the actual storage method, this will be replaced
+      const tradeOffer = {
+        id: 1,
+        createdBy: req.user!.id,
+        fromProgram: data.fromProgram,
+        toProgram: data.toProgram,
+        amountOffered: data.amountOffered,
+        amountRequested: data.amountRequested,
+        customRate: customRate.toString(),
+        marketRate: marketRate.rate,
+        savings: savings.toString(),
+        createdAt: new Date(),
+        expiresAt,
+        status: "open",
+        description: data.description || null
+      };
+      
+      // Lock the funds by reducing user's balance
+      // await storage.updateWalletBalance(sourceWallet.id, sourceWallet.balance - data.amountOffered);
+      
+      res.status(201).json(tradeOffer);
+    } catch (error) {
+      console.error("Error creating trade offer:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to create trade offer" });
+    }
+  });
+
+  // Cancel a trade offer
+  app.post("/api/trades/:id/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { id } = req.params;
+      
+      // Validate offer ID
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ message: "Invalid trade offer ID" });
+      }
+      
+      // Check if offer exists and belongs to user
+      // This would be implemented when we add the trade storage methods
+      
+      // For now, we'll just return a success message
+      res.status(200).json({ 
+        message: "Trade offer cancelled successfully", 
+        id: parseInt(id),
+        status: "cancelled"
+      });
+    } catch (error) {
+      console.error("Error cancelling trade offer:", error);
+      res.status(500).json({ message: "Failed to cancel trade offer" });
+    }
+  });
+
+  // Accept a trade offer
+  app.post("/api/trades/:id/accept", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { id } = req.params;
+      
+      // Validate offer ID
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ message: "Invalid trade offer ID" });
+      }
+      
+      // Validate request body
+      const data = acceptTradeOfferSchema.parse(req.body);
+      
+      // Check if offer exists, is still open, and not expired
+      // This would be implemented when we add the trade storage methods
+      
+      // Get offer details (placeholder for now)
+      const tradeOffer = {
+        id: parseInt(id),
+        createdBy: 2, // Some other user's ID
+        fromProgram: "QANTAS" as LoyaltyProgram,
+        toProgram: "XPOINTS" as LoyaltyProgram,
+        amountOffered: 1000,
+        amountRequested: 500,
+        customRate: "0.5",
+        marketRate: "0.6",
+        savings: "16.67",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: "open",
+        description: null
+      };
+      
+      // Check if user is trying to accept their own offer
+      if (tradeOffer.createdBy === req.user!.id) {
+        return res.status(400).json({ message: "Cannot accept your own trade offer" });
+      }
+      
+      // Get buyer's wallet (the current user accepting the offer)
+      const buyerWallet = await storage.getWallet(req.user!.id, tradeOffer.toProgram);
+      if (!buyerWallet) {
+        return res.status(404).json({ message: "Buyer wallet not found" });
+      }
+      
+      // Check if buyer has enough balance
+      if (buyerWallet.balance < tradeOffer.amountRequested) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Get seller's wallet (the user who created the offer)
+      const sellerWallet = {
+        id: 5,
+        userId: tradeOffer.createdBy,
+        program: tradeOffer.fromProgram,
+        balance: 5000,
+        accountNumber: null,
+        accountName: null,
+        createdAt: new Date()
+      };
+      
+      // Process the trade
+      // 1. Update seller's wallet: add requested amount
+      // 2. Update buyer's wallet: add offered amount, subtract requested amount
+      // 3. Update offer status to completed
+      // 4. Create a trade transaction record
+      
+      // This would be implemented when we add the trade storage methods
+      // For now, we'll just return a success message
+      
+      res.status(200).json({
+        message: "Trade completed successfully",
+        transaction: {
+          id: 1,
+          tradeOfferId: tradeOffer.id,
+          sellerId: tradeOffer.createdBy,
+          buyerId: req.user!.id,
+          completedAt: new Date(),
+          sellerWalletId: sellerWallet.id,
+          buyerWalletId: buyerWallet.id,
+          amountSold: tradeOffer.amountOffered,
+          amountBought: tradeOffer.amountRequested,
+          rate: tradeOffer.customRate,
+          sellerFee: 0,
+          buyerFee: 0,
+          status: "completed"
+        }
+      });
+    } catch (error) {
+      console.error("Error accepting trade offer:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to accept trade offer" });
+    }
+  });
+
+  // Get trade history for user
+  app.get("/api/trades/history", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // This endpoint will return all completed trades where the user was involved
+      // Either as a buyer or seller
+      // For now, we'll return a placeholder empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching trade history:", error);
+      res.status(500).json({ message: "Failed to fetch trade history" });
     }
   });
 

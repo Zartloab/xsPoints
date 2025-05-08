@@ -140,6 +140,40 @@ export const businessPointIssuance = pgTable("business_point_issuance", {
   status: text("status").default("active").notNull(), // active, used, expired
 });
 
+// P2P Trade Offers - for user-to-user direct point trading
+export const tradeOffers = pgTable("trade_offers", {
+  id: serial("id").primaryKey(),
+  createdBy: serial("created_by").references(() => users.id),
+  fromProgram: loyaltyProgramEnum("from_program").notNull(),
+  toProgram: loyaltyProgramEnum("to_program").notNull(),
+  amountOffered: real("amount_offered").notNull(),
+  amountRequested: real("amount_requested").notNull(),
+  customRate: numeric("custom_rate").notNull(), // Calculated rate for this trade
+  marketRate: numeric("market_rate").notNull(), // Current market rate when offer created
+  savings: numeric("savings").notNull(), // % difference between market and custom rate
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").default("open").notNull(), // open, completed, cancelled, expired
+  description: text("description"), // Optional note from the creator
+});
+
+// P2P Trade Transactions - for completed trades between users
+export const tradeTransactions = pgTable("trade_transactions", {
+  id: serial("id").primaryKey(),
+  tradeOfferId: serial("trade_offer_id").references(() => tradeOffers.id),
+  sellerId: serial("seller_id").references(() => users.id),
+  buyerId: serial("buyer_id").references(() => users.id),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  sellerWalletId: serial("seller_wallet_id").references(() => wallets.id),
+  buyerWalletId: serial("buyer_wallet_id").references(() => wallets.id),
+  amountSold: real("amount_sold").notNull(),
+  amountBought: real("amount_bought").notNull(),
+  rate: numeric("rate").notNull(),
+  sellerFee: real("seller_fee").default(0).notNull(),
+  buyerFee: real("buyer_fee").default(0).notNull(),
+  status: text("status").default("completed").notNull(), // completed, disputed, refunded
+});
+
 // Create schemas for the new tables
 export const insertBusinessSchema = createInsertSchema(businesses).pick({
   userId: true,
@@ -174,17 +208,36 @@ export const businessIssuePointsSchema = z.object({
   expirationDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
 });
 
+// Schema for creating new trade offers
+export const createTradeOfferSchema = z.object({
+  fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
+  toProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
+  amountOffered: z.number().positive(),
+  amountRequested: z.number().positive(),
+  expiresIn: z.number().int().min(1).max(30).default(7), // Days until expiration (default 7 days)
+  description: z.string().max(500).optional(),
+});
+
+// Schema for accepting trade offers
+export const acceptTradeOfferSchema = z.object({
+  tradeOfferId: z.number().positive(),
+});
+
 export type LoyaltyProgram = "QANTAS" | "GYG" | "XPOINTS";
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertBusiness = z.infer<typeof insertBusinessSchema>;
 export type InsertBusinessProgram = z.infer<typeof insertBusinessProgramSchema>;
 export type InsertBusinessPayment = z.infer<typeof insertBusinessPaymentSchema>;
 export type BusinessIssuePointsData = z.infer<typeof businessIssuePointsSchema>;
+export type CreateTradeOfferData = z.infer<typeof createTradeOfferSchema>;
+export type AcceptTradeOfferData = z.infer<typeof acceptTradeOfferSchema>;
 export type User = typeof users.$inferSelect;
 export type Business = typeof businesses.$inferSelect;
 export type BusinessProgram = typeof businessPrograms.$inferSelect;
 export type BusinessPayment = typeof businessPayments.$inferSelect;
 export type BusinessPointIssuance = typeof businessPointIssuance.$inferSelect;
+export type TradeOffer = typeof tradeOffers.$inferSelect;
+export type TradeTransaction = typeof tradeTransactions.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
