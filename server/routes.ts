@@ -2,7 +2,15 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { convertPointsSchema, linkAccountSchema, type LoyaltyProgram } from "@shared/schema";
+import { 
+  convertPointsSchema, 
+  linkAccountSchema, 
+  insertBusinessSchema,
+  insertBusinessProgramSchema,
+  insertBusinessPaymentSchema,
+  businessIssuePointsSchema,
+  type LoyaltyProgram 
+} from "@shared/schema";
 import { z } from 'zod';
 
 // Define interfaces for tokenization and explorer features
@@ -348,6 +356,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to create promotion" });
+    }
+  });
+
+  // ===== BUSINESS LOYALTY PROGRAM FEATURES =====
+  
+  // Get user's businesses
+  app.get("/api/business", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // This will be implemented when we add the business storage methods
+      // For now, we'll return an empty array
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching businesses:", error);
+      res.status(500).json({ message: "Failed to fetch businesses" });
+    }
+  });
+  
+  // Create a new business
+  app.post("/api/business", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Validate request body
+      const data = insertBusinessSchema.parse(req.body);
+      
+      // Create business (placeholder for storage implementation)
+      const business = {
+        ...data,
+        userId: req.user!.id,
+        id: 1, // This would be auto-generated in the database
+        createdAt: new Date(),
+        verified: false,
+        active: true
+      };
+      
+      res.status(201).json(business);
+    } catch (error) {
+      console.error("Error creating business:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to create business" });
+    }
+  });
+  
+  // Create a new business loyalty program
+  app.post("/api/business/:businessId/program", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { businessId } = req.params;
+      
+      // Validate business ID
+      if (!businessId || isNaN(Number(businessId))) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      // Validate request body
+      const data = insertBusinessProgramSchema.parse(req.body);
+      
+      // Make sure the user owns this business
+      // This would be implemented when we add the business storage methods
+      
+      // Create loyalty program (placeholder for storage implementation)
+      const program = {
+        ...data,
+        businessId: parseInt(businessId),
+        id: 1, // This would be auto-generated in the database
+        createdAt: new Date(),
+        active: true,
+        pointsIssued: "0"
+      };
+      
+      res.status(201).json(program);
+    } catch (error) {
+      console.error("Error creating business program:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to create business program" });
+    }
+  });
+  
+  // Pay to issue points (businesses purchase points from xPoints)
+  app.post("/api/business/:businessId/payment", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { businessId } = req.params;
+      
+      // Validate business ID
+      if (!businessId || isNaN(Number(businessId))) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      // Validate request body
+      const data = insertBusinessPaymentSchema.parse(req.body);
+      
+      // Make sure the user owns this business
+      // This would be implemented when we add the business storage methods
+      
+      // For now, let's assume a fixed exchange rate of 100 points per $1
+      const pointsIssued = Number(data.amount) * 100;
+      
+      // Process payment (in a real implementation, we would use Stripe or another payment processor)
+      const payment = {
+        ...data,
+        businessId: parseInt(businessId),
+        id: 1, // This would be auto-generated in the database
+        paymentDate: new Date(),
+        pointsIssued: pointsIssued.toString(),
+        status: "completed"
+      };
+      
+      // Update the business program's available points
+      // This would be implemented when we add the business storage methods
+      
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to process payment" });
+    }
+  });
+  
+  // Issue points to a user
+  app.post("/api/business/program/:programId/issue", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { programId } = req.params;
+      
+      // Validate program ID
+      if (!programId || isNaN(Number(programId))) {
+        return res.status(400).json({ message: "Invalid program ID" });
+      }
+      
+      // Validate request body
+      const data = businessIssuePointsSchema.parse(req.body);
+      
+      // Make sure the user owns the business that owns this program
+      // This would be implemented when we add the business storage methods
+      
+      // Check if the business has enough points to issue
+      // This would be implemented when we add the business storage methods
+      
+      // Issue points to the user
+      const issuance = {
+        ...data,
+        businessProgramId: parseInt(programId),
+        id: 1, // This would be auto-generated in the database
+        issuanceDate: new Date(),
+        status: "active"
+      };
+      
+      // Update the user's wallet for this program
+      // This would be implemented when we add a custom business program wallet
+      
+      res.status(201).json(issuance);
+    } catch (error) {
+      console.error("Error issuing points:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to issue points" });
     }
   });
 

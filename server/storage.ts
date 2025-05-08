@@ -205,17 +205,117 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
-    const [rate] = await db
-      .select()
-      .from(exchangeRates)
-      .where(
-        and(
-          eq(exchangeRates.fromProgram, fromProgram),
-          eq(exchangeRates.toProgram, toProgram)
-        )
-      );
+    try {
+      // First check our database for the most recent rate
+      const [rate] = await db
+        .select()
+        .from(exchangeRates)
+        .where(
+          and(
+            eq(exchangeRates.fromProgram, fromProgram),
+            eq(exchangeRates.toProgram, toProgram)
+          )
+        );
       
-    return rate;
+      // Check if the rate exists and is recent (less than 1 hour old)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      if (rate && rate.lastUpdated > oneHourAgo) {
+        // Rate is recent enough, return it
+        return rate;
+      }
+      
+      // Rate doesn't exist or is too old, fetch a fresh rate from external API
+      const updatedRate = await this.fetchRealTimeRate(fromProgram, toProgram);
+      
+      if (updatedRate) {
+        // Update the database with the new rate
+        if (rate) {
+          // Update existing rate
+          const [updated] = await db
+            .update(exchangeRates)
+            .set({ 
+              rate: updatedRate.rate,
+              lastUpdated: new Date()
+            })
+            .where(
+              and(
+                eq(exchangeRates.fromProgram, fromProgram),
+                eq(exchangeRates.toProgram, toProgram)
+              )
+            )
+            .returning();
+          
+          return updated;
+        } else {
+          // Insert new rate
+          const [newRate] = await db
+            .insert(exchangeRates)
+            .values({
+              fromProgram,
+              toProgram,
+              rate: updatedRate.rate,
+              lastUpdated: new Date()
+            })
+            .returning();
+          
+          return newRate;
+        }
+      }
+      
+      // If we couldn't fetch a new rate, return the old one (if it exists)
+      return rate;
+    } catch (error) {
+      console.error("Error fetching exchange rate:", error);
+      // Fall back to database rate if API call fails
+      const [fallbackRate] = await db
+        .select()
+        .from(exchangeRates)
+        .where(
+          and(
+            eq(exchangeRates.fromProgram, fromProgram),
+            eq(exchangeRates.toProgram, toProgram)
+          )
+        );
+      
+      return fallbackRate;
+    }
+  }
+  
+  // Helper method to fetch real-time exchange rates from external APIs
+  private async fetchRealTimeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<{ rate: string } | null> {
+    try {
+      // This is a placeholder for real API integration
+      // In a production environment, we would:
+      // 1. Make API calls to the respective loyalty programs
+      // 2. Parse the response to get current rates
+      // 3. Apply any business rules or adjustments
+      
+      // For now, simulate an API call with some realistic rates
+      // with slight variations to simulate market movement
+      
+      // Base rates
+      const baseRates: Record<string, number> = {
+        'QANTAS-XPOINTS': 0.5,
+        'XPOINTS-QANTAS': 1.8,
+        'GYG-XPOINTS': 0.8,
+        'XPOINTS-GYG': 1.25
+      };
+      
+      const key = `${fromProgram}-${toProgram}`;
+      
+      if (baseRates[key]) {
+        // Add a small random variation (-5% to +5%)
+        const variation = (Math.random() * 0.1) - 0.05;
+        const newRate = baseRates[key] * (1 + variation);
+        return { rate: newRate.toFixed(4) };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error fetching real-time rate:", error);
+      return null;
+    }
   }
 }
 
