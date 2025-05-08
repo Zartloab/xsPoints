@@ -1,9 +1,13 @@
 import { users, wallets, transactions, exchangeRates, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, type LoyaltyProgram } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
-// Session store
+// Session store options
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User operations
@@ -16,6 +20,7 @@ export interface IStorage {
   getWallet(userId: number, program: LoyaltyProgram): Promise<Wallet | undefined>;
   createWallet(wallet: Omit<Wallet, "id" | "createdAt">): Promise<Wallet>;
   updateWalletBalance(id: number, balance: number): Promise<Wallet>;
+  updateWalletAccount(id: number, accountNumber: string | null, accountName: string | null): Promise<Wallet>;
   
   // Transaction operations
   getUserTransactions(userId: number): Promise<Transaction[]>;
@@ -25,9 +30,198 @@ export interface IStorage {
   getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using 'any' to avoid type errors with session.SessionStore
 }
 
+// PostgreSQL Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    // Initialize session store with PostgreSQL
+    this.sessionStore = new PostgresSessionStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+      createTableIfMissing: true
+    });
+    
+    // Set up initial exchange rates if they don't exist
+    this.initializeExchangeRates();
+  }
+
+  private async initializeExchangeRates() {
+    try {
+      // Check if exchange rates exist
+      const existingRates = await db.select().from(exchangeRates);
+      
+      if (existingRates.length === 0) {
+        // Initial rates to set up
+        const initialRates = [
+          {
+            fromProgram: 'QANTAS' as LoyaltyProgram,
+            toProgram: 'XPOINTS' as LoyaltyProgram,
+            rate: 0.5, 
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'XPOINTS' as LoyaltyProgram,
+            toProgram: 'QANTAS' as LoyaltyProgram,
+            rate: 1.8,
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'GYG' as LoyaltyProgram,
+            toProgram: 'XPOINTS' as LoyaltyProgram,
+            rate: 0.8,
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'XPOINTS' as LoyaltyProgram,
+            toProgram: 'GYG' as LoyaltyProgram,
+            rate: 1.25,
+            lastUpdated: new Date(),
+          }
+        ];
+        
+        // Insert initial exchange rates
+        await db.insert(exchangeRates).values(initialRates);
+      }
+    } catch (error) {
+      console.error("Error initializing exchange rates:", error);
+    }
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    // Insert the user with kycVerified field
+    const userWithKyc = {
+      ...insertUser,
+      kycVerified: "unverified"
+    };
+    
+    const [user] = await db.insert(users).values(userWithKyc).returning();
+    
+    // Create default wallets for new user
+    await this.createWallet({
+      userId: user.id,
+      program: "QANTAS",
+      balance: 0,
+      accountNumber: null,
+      accountName: null,
+    });
+    
+    await this.createWallet({
+      userId: user.id,
+      program: "GYG",
+      balance: 0,
+      accountNumber: null,
+      accountName: null,
+    });
+    
+    await this.createWallet({
+      userId: user.id,
+      program: "XPOINTS",
+      balance: 1000, // Give new users some starting xPoints
+      accountNumber: null,
+      accountName: null,
+    });
+    
+    return user;
+  }
+
+  async getUserWallets(userId: number): Promise<Wallet[]> {
+    return db.select().from(wallets).where(eq(wallets.userId, userId));
+  }
+
+  async getWallet(userId: number, program: LoyaltyProgram): Promise<Wallet | undefined> {
+    const [wallet] = await db.select().from(wallets).where(
+      and(
+        eq(wallets.userId, userId),
+        eq(wallets.program, program)
+      )
+    );
+    return wallet;
+  }
+
+  async createWallet(wallet: Omit<Wallet, "id" | "createdAt">): Promise<Wallet> {
+    const [newWallet] = await db.insert(wallets).values(wallet).returning();
+    return newWallet;
+  }
+
+  async updateWalletBalance(id: number, balance: number): Promise<Wallet> {
+    const [updatedWallet] = await db
+      .update(wallets)
+      .set({ balance })
+      .where(eq(wallets.id, id))
+      .returning();
+      
+    if (!updatedWallet) {
+      throw new Error("Wallet not found");
+    }
+    
+    return updatedWallet;
+  }
+  
+  async updateWalletAccount(id: number, accountNumber: string | null, accountName: string | null): Promise<Wallet> {
+    const [updatedWallet] = await db
+      .update(wallets)
+      .set({ 
+        accountNumber, 
+        accountName 
+      })
+      .where(eq(wallets.id, id))
+      .returning();
+      
+    if (!updatedWallet) {
+      throw new Error("Wallet not found");
+    }
+    
+    return updatedWallet;
+  }
+
+  async getUserTransactions(userId: number): Promise<Transaction[]> {
+    return db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.timestamp));
+  }
+
+  async createTransaction(transaction: Omit<Transaction, "id" | "timestamp">): Promise<Transaction> {
+    const [newTransaction] = await db
+      .insert(transactions)
+      .values(transaction)
+      .returning();
+      
+    return newTransaction;
+  }
+
+  async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
+    const [rate] = await db
+      .select()
+      .from(exchangeRates)
+      .where(
+        and(
+          eq(exchangeRates.fromProgram, fromProgram),
+          eq(exchangeRates.toProgram, toProgram)
+        )
+      );
+      
+    return rate;
+  }
+}
+
+// In-memory storage implementation - keeping for reference but not using
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private wallets: Map<number, Wallet>;
@@ -118,7 +312,7 @@ export class MemStorage implements IStorage {
     await this.createWallet({ 
       userId: id, 
       program: "XPOINTS", 
-      balance: 0, 
+      balance: 1000, 
       accountNumber: null, 
       accountName: null
     });
@@ -186,4 +380,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Switch to database storage
+export const storage = new DatabaseStorage();
