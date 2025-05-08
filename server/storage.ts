@@ -61,25 +61,25 @@ export class DatabaseStorage implements IStorage {
           {
             fromProgram: 'QANTAS' as LoyaltyProgram,
             toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: 0.5, 
+            rate: "0.5", 
             lastUpdated: new Date(),
           },
           {
             fromProgram: 'XPOINTS' as LoyaltyProgram,
             toProgram: 'QANTAS' as LoyaltyProgram,
-            rate: 1.8,
+            rate: "1.8",
             lastUpdated: new Date(),
           },
           {
             fromProgram: 'GYG' as LoyaltyProgram,
             toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: 0.8,
+            rate: "0.8",
             lastUpdated: new Date(),
           },
           {
             fromProgram: 'XPOINTS' as LoyaltyProgram,
             toProgram: 'GYG' as LoyaltyProgram,
-            rate: 1.25,
+            rate: "1.25",
             lastUpdated: new Date(),
           }
         ];
@@ -253,10 +253,10 @@ export class MemStorage implements IStorage {
   // Initialize default exchange rates
   private setupExchangeRates() {
     const rates = [
-      { fromProgram: "QANTAS" as LoyaltyProgram, toProgram: "XPOINTS" as LoyaltyProgram, rate: 0.5 },
-      { fromProgram: "XPOINTS" as LoyaltyProgram, toProgram: "QANTAS" as LoyaltyProgram, rate: 1.8 },
-      { fromProgram: "GYG" as LoyaltyProgram, toProgram: "XPOINTS" as LoyaltyProgram, rate: 0.8 },
-      { fromProgram: "XPOINTS" as LoyaltyProgram, toProgram: "GYG" as LoyaltyProgram, rate: 1.25 },
+      { fromProgram: "QANTAS" as LoyaltyProgram, toProgram: "XPOINTS" as LoyaltyProgram, rate: "0.5" },
+      { fromProgram: "XPOINTS" as LoyaltyProgram, toProgram: "QANTAS" as LoyaltyProgram, rate: "1.8" },
+      { fromProgram: "GYG" as LoyaltyProgram, toProgram: "XPOINTS" as LoyaltyProgram, rate: "0.8" },
+      { fromProgram: "XPOINTS" as LoyaltyProgram, toProgram: "GYG" as LoyaltyProgram, rate: "1.25" },
     ];
 
     rates.forEach(rate => {
@@ -352,6 +352,21 @@ export class MemStorage implements IStorage {
     const updatedWallet = { 
       ...wallet, 
       balance 
+    };
+    this.wallets.set(id, updatedWallet);
+    return updatedWallet;
+  }
+  
+  async updateWalletAccount(id: number, accountNumber: string | null, accountName: string | null): Promise<Wallet> {
+    const wallet = this.wallets.get(id);
+    if (!wallet) {
+      throw new Error("Wallet not found");
+    }
+    
+    const updatedWallet = { 
+      ...wallet, 
+      accountNumber,
+      accountName
     };
     this.wallets.set(id, updatedWallet);
     return updatedWallet;
