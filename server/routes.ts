@@ -362,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // For now, return placeholder data for the UI
       // This would eventually query transaction data with time-series analysis
-      const trends = [];
+      const trends: MarketTrend[] = [];
       
       res.json(trends);
     } catch (error) {
