@@ -129,7 +129,12 @@ const MembershipTierCard: React.FC = () => {
   const currentTier = user?.membershipTier || 'STANDARD';
   
   // Fetch user stats to show progress towards next tier
-  const { data: userStats, isLoading } = useQuery({
+  const { data: userStats, isLoading } = useQuery<{
+    pointsConverted: number;
+    feesPaid: number;
+    monthlyPoints: number;
+    tier: MembershipTier;
+  }>({
     queryKey: ['/api/user-stats'],
     enabled: !!user,
   });
