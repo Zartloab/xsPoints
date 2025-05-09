@@ -17,20 +17,14 @@ export default function Footer() {
           
           <div className="mt-4 md:mt-0">
             <div className="flex space-x-6">
-              <Link href="/privacy">
-                <a className="text-gray-500 hover:text-gray-900">
-                  <span className="text-sm">Privacy</span>
-                </a>
+              <Link href="/privacy" className="text-gray-500 hover:text-gray-900">
+                <span className="text-sm">Privacy</span>
               </Link>
-              <Link href="/terms">
-                <a className="text-gray-500 hover:text-gray-900">
-                  <span className="text-sm">Terms</span>
-                </a>
+              <Link href="/terms" className="text-gray-500 hover:text-gray-900">
+                <span className="text-sm">Terms</span>
               </Link>
-              <Link href="/support">
-                <a className="text-gray-500 hover:text-gray-900">
-                  <span className="text-sm">Support</span>
-                </a>
+              <Link href="/support" className="text-gray-500 hover:text-gray-900">
+                <span className="text-sm">Support</span>
               </Link>
             </div>
           </div>
