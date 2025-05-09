@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wallet } from '@shared/schema';
+import { Wallet, ExchangeRate } from '@shared/schema';
 import ProgramIcon from './ProgramIcon';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
@@ -11,14 +11,38 @@ interface LoyaltyCardProps {
 }
 
 export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
-  const programName = wallet.program === 'QANTAS' ? 'Qantas' : 
-                       wallet.program === 'GYG' ? 'GYG' : 'xPoints';
+  // Get program name and description based on program type
+  const getProgramInfo = () => {
+    switch (wallet.program) {
+      case 'QANTAS':
+        return { name: 'Qantas', description: 'Frequent Flyer' };
+      case 'GYG':
+        return { name: 'GYG', description: 'Loyalty Program' };
+      case 'XPOINTS':
+        return { name: 'xPoints', description: 'Exchange Currency' };
+      case 'VELOCITY':
+        return { name: 'Velocity', description: 'Frequent Flyer' };
+      case 'AMEX':
+        return { name: 'American Express', description: 'Membership Rewards' };
+      case 'FLYBUYS':
+        return { name: 'Flybuys', description: 'Shopping Rewards' };
+      case 'HILTON':
+        return { name: 'Hilton', description: 'Honors Points' };
+      case 'MARRIOTT':
+        return { name: 'Marriott', description: 'Bonvoy Points' };
+      case 'AIRBNB':
+        return { name: 'Airbnb', description: 'Travel Credits' };
+      case 'DELTA':
+        return { name: 'Delta', description: 'SkyMiles' };
+      default:
+        return { name: wallet.program, description: 'Loyalty Program' };
+    }
+  };
   
-  const programDescription = wallet.program === 'QANTAS' ? 'Frequent Flyer' : 
-                             wallet.program === 'GYG' ? 'Loyalty Program' : 'Exchange Currency';
+  const { name: programName, description: programDescription } = getProgramInfo();
   
   // Get exchange rate to xPoints if not already xPoints
-  const { data: exchangeRate } = useQuery({
+  const { data: exchangeRate } = useQuery<ExchangeRate>({
     queryKey: [
       `/api/exchange-rates?from=${wallet.program}&to=XPOINTS`,
     ],
@@ -85,14 +109,20 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
             Convert
           </button>
           {isXpoints ? (
-            <button className="text-white hover:text-gray-100 text-sm font-medium flex items-center">
+            <button 
+              type="button"
+              className="text-white hover:text-gray-100 text-sm font-medium flex items-center"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               History
             </button>
           ) : (
-            <button className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center">
+            <button 
+              type="button"
+              className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
