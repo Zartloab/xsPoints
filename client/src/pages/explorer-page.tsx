@@ -42,20 +42,87 @@ const mockConversionData = {
     trend: 'up',
   },
   programs: [
-    { name: 'Qantas', value: 42 },
-    { name: 'GYG', value: 31 },
+    { name: 'Qantas', value: 25 },
+    { name: 'GYG', value: 18 },
     { name: 'xPoints', value: 27 },
+    { name: 'Velocity', value: 10 },
+    { name: 'Amex', value: 8 },
+    { name: 'Others', value: 12 },
   ],
   rates: [
+    // Qantas exchange rates
     { from: 'QANTAS', to: 'XPOINTS', rate: 0.5, change: 0 },
+    { from: 'QANTAS', to: 'GYG', rate: 0.4, change: -0.05 },
+    { from: 'QANTAS', to: 'VELOCITY', rate: 0.7, change: 0.1 },
+    { from: 'QANTAS', to: 'AMEX', rate: 0.35, change: 0 },
+    { from: 'QANTAS', to: 'FLYBUYS', rate: 0.45, change: 0.05 },
+    { from: 'QANTAS', to: 'HILTON', rate: 0.8, change: 0 },
+    { from: 'QANTAS', to: 'MARRIOTT', rate: 0.6, change: -0.1 },
+    { from: 'QANTAS', to: 'AIRBNB', rate: 0.3, change: 0 },
+    { from: 'QANTAS', to: 'DELTA', rate: 0.7, change: 0.05 },
+    
+    // GYG exchange rates
     { from: 'GYG', to: 'XPOINTS', rate: 0.8, change: 0.1 },
+    { from: 'GYG', to: 'QANTAS', rate: 2.5, change: 0.2 },
+    { from: 'GYG', to: 'VELOCITY', rate: 2.1, change: 0 },
+    { from: 'GYG', to: 'AMEX', rate: 1.8, change: 0.1 },
+    { from: 'GYG', to: 'FLYBUYS', rate: 2.0, change: -0.1 },
+    { from: 'GYG', to: 'HILTON', rate: 2.2, change: 0 },
+    { from: 'GYG', to: 'MARRIOTT', rate: 1.9, change: 0.05 },
+    { from: 'GYG', to: 'AIRBNB', rate: 1.5, change: 0 },
+    { from: 'GYG', to: 'DELTA', rate: 2.3, change: 0 },
+    
+    // xPoints exchange rates
     { from: 'XPOINTS', to: 'QANTAS', rate: 1.8, change: -0.2 },
     { from: 'XPOINTS', to: 'GYG', rate: 1.25, change: 0 },
+    { from: 'XPOINTS', to: 'VELOCITY', rate: 1.5, change: 0.1 },
+    { from: 'XPOINTS', to: 'AMEX', rate: 1.2, change: 0 },
+    { from: 'XPOINTS', to: 'FLYBUYS', rate: 1.3, change: 0.05 },
+    { from: 'XPOINTS', to: 'HILTON', rate: 1.7, change: -0.1 },
+    { from: 'XPOINTS', to: 'MARRIOTT', rate: 1.4, change: 0 },
+    { from: 'XPOINTS', to: 'AIRBNB', rate: 1.0, change: 0.2 },
+    { from: 'XPOINTS', to: 'DELTA', rate: 1.6, change: 0 },
+    
+    // Velocity exchange rates
+    { from: 'VELOCITY', to: 'XPOINTS', rate: 0.65, change: 0 },
+    { from: 'VELOCITY', to: 'QANTAS', rate: 1.4, change: 0.1 },
+    { from: 'VELOCITY', to: 'GYG', rate: 0.55, change: 0 },
+    
+    // AMEX exchange rates
+    { from: 'AMEX', to: 'XPOINTS', rate: 0.85, change: 0.05 },
+    { from: 'AMEX', to: 'QANTAS', rate: 1.6, change: 0 },
+    { from: 'AMEX', to: 'MARRIOTT', rate: 1.2, change: 0.1 },
+    
+    // FLYBUYS exchange rates
+    { from: 'FLYBUYS', to: 'XPOINTS', rate: 0.75, change: 0 },
+    { from: 'FLYBUYS', to: 'QANTAS', rate: 1.45, change: -0.1 },
+    
+    // HILTON exchange rates
+    { from: 'HILTON', to: 'XPOINTS', rate: 0.6, change: 0.05 },
+    { from: 'HILTON', to: 'MARRIOTT', rate: 0.9, change: 0 },
+    
+    // MARRIOTT exchange rates
+    { from: 'MARRIOTT', to: 'XPOINTS', rate: 0.7, change: 0 },
+    { from: 'MARRIOTT', to: 'HILTON', rate: 1.1, change: 0.05 },
+    
+    // AIRBNB exchange rates
+    { from: 'AIRBNB', to: 'XPOINTS', rate: 0.95, change: 0.1 },
+    
+    // DELTA exchange rates
+    { from: 'DELTA', to: 'XPOINTS', rate: 0.55, change: 0 },
+    { from: 'DELTA', to: 'QANTAS', rate: 1.3, change: -0.05 },
   ],
   circulatingPoints: {
     QANTAS: 12500000,
     GYG: 8350000,
     XPOINTS: 2750000,
+    VELOCITY: 5250000,
+    AMEX: 4120000,
+    FLYBUYS: 6830000,
+    HILTON: 3950000,
+    MARRIOTT: 4780000,
+    AIRBNB: 1250000,
+    DELTA: 7650000,
   },
 };
 
@@ -358,7 +425,8 @@ export default function ExplorerPage() {
               </Button>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              {/* QANTAS Card */}
               <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center">
@@ -377,15 +445,16 @@ export default function ExplorerPage() {
                   </p>
                   <div className="mt-4">
                     <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
-                      <div className="bg-red-500 h-full rounded-full" style={{ width: '53%' }}></div>
+                      <div className="bg-red-500 h-full rounded-full" style={{ width: '21%' }}></div>
                     </div>
                     <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                      <span>53% of total circulation</span>
+                      <span>21% of total circulation</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
+              {/* GYG Card */}
               <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center">
@@ -404,15 +473,16 @@ export default function ExplorerPage() {
                   </p>
                   <div className="mt-4">
                     <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
-                      <div className="bg-yellow-500 h-full rounded-full" style={{ width: '35%' }}></div>
+                      <div className="bg-yellow-500 h-full rounded-full" style={{ width: '14%' }}></div>
                     </div>
                     <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                      <span>35% of total circulation</span>
+                      <span>14% of total circulation</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
+              {/* xPoints Card */}
               <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center">
@@ -431,10 +501,206 @@ export default function ExplorerPage() {
                   </p>
                   <div className="mt-4">
                     <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
-                      <div className="bg-primary h-full rounded-full" style={{ width: '12%' }}></div>
+                      <div className="bg-primary h-full rounded-full" style={{ width: '5%' }}></div>
                     </div>
                     <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                      <span>12% of total circulation</span>
+                      <span>5% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Velocity Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-red-700">V</span>
+                    </div>
+                    <CardTitle className="text-base">Velocity Points</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.VELOCITY / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+3.1%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-red-400 h-full rounded-full" style={{ width: '9%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>9% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* AMEX Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-purple-700">A</span>
+                    </div>
+                    <CardTitle className="text-base">Amex Points</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.AMEX / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+1.8%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-purple-500 h-full rounded-full" style={{ width: '7%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>7% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* FLYBUYS Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-green-700">F</span>
+                    </div>
+                    <CardTitle className="text-base">Flybuys Points</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.FLYBUYS / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+5.2%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-green-500 h-full rounded-full" style={{ width: '11%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>11% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* HILTON Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-blue-700">H</span>
+                    </div>
+                    <CardTitle className="text-base">Hilton Points</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.HILTON / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+2.1%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-blue-500 h-full rounded-full" style={{ width: '7%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>7% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* MARRIOTT Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-indigo-700">M</span>
+                    </div>
+                    <CardTitle className="text-base">Marriott Points</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.MARRIOTT / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+1.9%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-indigo-500 h-full rounded-full" style={{ width: '8%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>8% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* AIRBNB Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-pink-700">A</span>
+                    </div>
+                    <CardTitle className="text-base">Airbnb Credits</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.AIRBNB / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+7.4%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-pink-500 h-full rounded-full" style={{ width: '2%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>2% of total circulation</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* DELTA Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                      <span className="font-medium text-blue-700">D</span>
+                    </div>
+                    <CardTitle className="text-base">Delta SkyMiles</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{(mockConversionData.circulatingPoints.DELTA / 1000000).toFixed(1)}M</div>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                    <span className="text-green-500">+3.8%</span>
+                    <span className="ml-1">from previous month</span>
+                  </p>
+                  <div className="mt-4">
+                    <div className="bg-gray-100 h-2 rounded-full w-full overflow-hidden">
+                      <div className="bg-blue-600 h-full rounded-full" style={{ width: '13%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                      <span>13% of total circulation</span>
                     </div>
                   </div>
                 </CardContent>
