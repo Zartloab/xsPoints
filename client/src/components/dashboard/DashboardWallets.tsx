@@ -71,7 +71,7 @@ export default function DashboardWallets() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {wallets?.map((wallet) => (
-            <LoyaltyCard 
+            <LoyaltyCardWithTranslator
               key={wallet.id} 
               wallet={wallet} 
               onConvert={handleConvert}

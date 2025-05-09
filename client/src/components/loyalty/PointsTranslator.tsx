@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { Wallet, LoyaltyProgram } from '@shared/schema';
-import { GiftIcon, PlaneIcon, UtensilsIcon, BedDoubleIcon, CoffeeIcon, ShoppingBagIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
+import { PlaneIcon, Coffee, Gift, Car, Hotel, ShoppingBag, UtensilsCrossed, Palmtree } from 'lucide-react';
 
 interface PointsTranslatorProps {
   wallet: Wallet;
@@ -16,241 +15,205 @@ interface RedeemableItem {
   icon: React.ReactNode;
 }
 
-// Define redeemable items based on loyalty program
 const getRedeemableItems = (program: LoyaltyProgram, balance: number): RedeemableItem[] => {
-  switch(program) {
+  // Define program-specific redemption options with real-world equivalents
+  switch (program) {
     case 'QANTAS':
       return [
         { 
-          name: 'Economy Class Flight',
+          name: 'Economy Flight', 
           description: 'Sydney to Melbourne one-way',
           pointsRequired: 8000,
-          icon: <PlaneIcon className="h-5 w-5" />
+          icon: <PlaneIcon />
         },
         { 
-          name: 'Business Class Upgrade',
-          description: 'Domestic flight upgrade',
+          name: 'Business Class Upgrade', 
+          description: 'Domestic flight',
           pointsRequired: 12000,
-          icon: <PlaneIcon className="h-5 w-5" />
+          icon: <PlaneIcon />
         },
         { 
-          name: 'International Economy',
-          description: 'Sydney to Auckland return',
-          pointsRequired: 18000,
-          icon: <PlaneIcon className="h-5 w-5" />
+          name: 'International Economy', 
+          description: 'Sydney to Singapore',
+          pointsRequired: 25000,
+          icon: <PlaneIcon />
         },
         { 
-          name: 'Premium Gift Card',
-          description: '$50 retail voucher',
-          pointsRequired: 10500,
-          icon: <GiftIcon className="h-5 w-5" />
+          name: 'Gift Card', 
+          description: '$50 David Jones Voucher',
+          pointsRequired: 9500,
+          icon: <Gift /> 
         }
-      ];
-    
-    case 'GYG':
-      return [
-        { 
-          name: 'Free Burrito',
-          description: 'Any regular burrito',
-          pointsRequired: 1200,
-          icon: <UtensilsIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Nachos + Drink',
-          description: 'Regular nachos with soft drink',
-          pointsRequired: 900,
-          icon: <UtensilsIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Family Meal',
-          description: '4 burritos + nachos',
-          pointsRequired: 4500,
-          icon: <UtensilsIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Catering Package',
-          description: 'Party pack for 8-10 people',
-          pointsRequired: 10000,
-          icon: <UtensilsIcon className="h-5 w-5" />
-        }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5); // Show items even if slightly out of reach
+      
     case 'VELOCITY':
       return [
         { 
-          name: 'Economy Flight',
+          name: 'Economy Flight', 
           description: 'Sydney to Brisbane one-way',
           pointsRequired: 7800,
-          icon: <PlaneIcon className="h-5 w-5" />
+          icon: <PlaneIcon />
         },
         { 
-          name: 'Lounge Access',
-          description: 'Single visit pass',
-          pointsRequired: 9500,
-          icon: <CoffeeIcon className="h-5 w-5" />
+          name: 'Lounge Access', 
+          description: 'One-time pass',
+          pointsRequired: 8000,
+          icon: <Coffee />
         },
         { 
-          name: 'Flight Upgrade',
-          description: 'Economy to Business',
-          pointsRequired: 15000,
-          icon: <PlaneIcon className="h-5 w-5" />
+          name: 'Gift Card', 
+          description: '$50 Myer Voucher',
+          pointsRequired: 9000,
+          icon: <ShoppingBag />
         }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     case 'AMEX':
       return [
         { 
-          name: 'Premium Headphones',
-          description: 'Noise-cancelling wireless',
-          pointsRequired: 22000,
-          icon: <GiftIcon className="h-5 w-5" />
+          name: 'Statement Credit', 
+          description: '$100 off your bill',
+          pointsRequired: 15000,
+          icon: <Gift />
         },
         { 
-          name: 'Shopping Voucher',
-          description: '$100 department store voucher',
-          pointsRequired: 20000,
-          icon: <ShoppingBagIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Restaurant Credit',
-          description: '$50 dining credit',
-          pointsRequired: 10000,
-          icon: <UtensilsIcon className="h-5 w-5" />
+          name: 'Wine Voucher', 
+          description: '$50 at selected stores',
+          pointsRequired: 7500,
+          icon: <UtensilsCrossed />
         }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     case 'HILTON':
       return [
         { 
-          name: 'Standard Room Night',
-          description: 'One night at Hilton Sydney',
-          pointsRequired: 30000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
+          name: 'Free Night', 
+          description: 'Standard room at Hilton Sydney',
+          pointsRequired: 60000,
+          icon: <Hotel />
         },
         { 
-          name: 'Premium Room Night',
-          description: 'Executive room with lounge access',
-          pointsRequired: 50000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Resort Credit',
-          description: '$100 dining/spa credit',
-          pointsRequired: 25000,
-          icon: <GiftIcon className="h-5 w-5" />
+          name: 'Resort Discount', 
+          description: '$50 dining credit',
+          pointsRequired: 10000,
+          icon: <UtensilsCrossed />
         }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     case 'MARRIOTT':
       return [
         { 
-          name: 'Standard Room Night',
-          description: 'One night at Marriott Sydney',
-          pointsRequired: 35000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Weekend Getaway',
-          description: 'Two nights at a Category 4 hotel',
-          pointsRequired: 60000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Hotel Credit',
-          description: '$75 property credit',
+          name: 'Free Night', 
+          description: 'Standard room at Category 4 property',
           pointsRequired: 25000,
-          icon: <GiftIcon className="h-5 w-5" />
+          icon: <Hotel />
+        },
+        { 
+          name: 'Room Upgrade', 
+          description: 'To Deluxe room for a 5-night stay',
+          pointsRequired: 15000,
+          icon: <Hotel />
         }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     case 'AIRBNB':
       return [
         { 
-          name: 'Weekend Stay',
-          description: '$150 credit towards a booking',
-          pointsRequired: 15000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Week-long Vacation',
-          description: '$500 credit towards a booking',
-          pointsRequired: 50000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
+          name: 'Travel Credit', 
+          description: '$100 towards your next stay',
+          pointsRequired: 10000,
+          icon: <Palmtree />
         }
-      ];
-    
-    case 'DELTA':
-      return [
-        { 
-          name: 'Domestic Flight',
-          description: 'Main Cabin within US',
-          pointsRequired: 25000,
-          icon: <PlaneIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'International Economy',
-          description: 'US to Europe',
-          pointsRequired: 60000,
-          icon: <PlaneIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'First Class Upgrade',
-          description: 'Domestic flight upgrade',
-          pointsRequired: 15000,
-          icon: <PlaneIcon className="h-5 w-5" />
-        }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     case 'FLYBUYS':
       return [
         { 
-          name: 'Grocery Voucher',
-          description: '$20 supermarket voucher',
+          name: 'Grocery Voucher', 
+          description: '$50 at Coles',
+          pointsRequired: 5000,
+          icon: <ShoppingBag />
+        },
+        { 
+          name: 'Fuel Discount', 
+          description: '4¢ off per liter',
           pointsRequired: 2000,
-          icon: <ShoppingBagIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Kitchen Appliance',
-          description: 'Mid-range blender or toaster',
-          pointsRequired: 8000,
-          icon: <GiftIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Premium Cookware',
-          description: 'High-quality pan set',
-          pointsRequired: 17000,
-          icon: <GiftIcon className="h-5 w-5" />
+          icon: <Car />
         }
-      ];
-    
-    case 'XPOINTS':
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
+    case 'DELTA':
       return [
         { 
-          name: 'Universal Voucher',
-          description: '$25 credit for any partner',
-          pointsRequired: 2500,
-          icon: <GiftIcon className="h-5 w-5" />
+          name: 'Economy Flight', 
+          description: 'LA to New York one-way',
+          pointsRequired: 15000,
+          icon: <PlaneIcon />
         },
         { 
-          name: 'Premium Experience',
-          description: 'Dining, travel, or shopping',
-          pointsRequired: 10000,
-          icon: <ShoppingBagIcon className="h-5 w-5" />
-        },
-        { 
-          name: 'Luxury Weekend',
-          description: 'Hotel stay + dining credit',
-          pointsRequired: 25000,
-          icon: <BedDoubleIcon className="h-5 w-5" />
+          name: 'Comfort+ Upgrade', 
+          description: 'Domestic flight',
+          pointsRequired: 5000,
+          icon: <PlaneIcon />
         }
-      ];
-    
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
+    case 'GYG':
+      return [
+        { 
+          name: 'Free Burrito', 
+          description: 'Any regular burrito',
+          pointsRequired: 200,
+          icon: <UtensilsCrossed />
+        },
+        { 
+          name: 'Meal Deal', 
+          description: 'Burrito, drink & nachos',
+          pointsRequired: 350,
+          icon: <UtensilsCrossed />
+        },
+        { 
+          name: 'GYG Voucher', 
+          description: '$50 gift card',
+          pointsRequired: 550,
+          icon: <Gift />
+        }
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
+    case 'XPOINTS':
+      // For xPoints, we'll show generic redemption options
+      return [
+        { 
+          name: 'Economy Flight', 
+          description: 'Short domestic route',
+          pointsRequired: 10000,
+          icon: <PlaneIcon />
+        },
+        { 
+          name: 'Hotel Stay', 
+          description: 'One night at 4-star hotel',
+          pointsRequired: 15000,
+          icon: <Hotel />
+        },
+        { 
+          name: 'Shopping Voucher', 
+          description: '$100 gift card',
+          pointsRequired: 20000,
+          icon: <ShoppingBag />
+        },
+        { 
+          name: 'Meal Voucher', 
+          description: '$50 dining credit',
+          pointsRequired: 10000,
+          icon: <UtensilsCrossed />
+        }
+      ].filter(item => item.pointsRequired <= balance * 1.5);
+      
     default:
       return [];
   }
 };
 
-// Get program display name
 const getProgramDisplayName = (program: LoyaltyProgram): string => {
   switch (program) {
     case 'QANTAS': return 'Qantas';
@@ -259,126 +222,71 @@ const getProgramDisplayName = (program: LoyaltyProgram): string => {
     case 'VELOCITY': return 'Velocity';
     case 'AMEX': return 'American Express';
     case 'FLYBUYS': return 'Flybuys';
-    case 'HILTON': return 'Hilton';
-    case 'MARRIOTT': return 'Marriott';
+    case 'HILTON': return 'Hilton Honors';
+    case 'MARRIOTT': return 'Marriott Bonvoy';
     case 'AIRBNB': return 'Airbnb';
-    case 'DELTA': return 'Delta';
+    case 'DELTA': return 'Delta SkyMiles';
     default: return program;
   }
 };
 
 export default function PointsTranslator({ wallet }: PointsTranslatorProps) {
-  const { program, balance } = wallet;
-  const [items, setItems] = useState<RedeemableItem[]>([]);
-  
-  useEffect(() => {
-    setItems(getRedeemableItems(program as LoyaltyProgram, balance));
-  }, [program, balance]);
-
-  // Get unique redeemable items that can be obtained with current balance
-  const getObtainableItems = () => {
-    return items.filter(item => item.pointsRequired <= balance)
-      .sort((a, b) => b.pointsRequired - a.pointsRequired);
-  };
-  
-  // Get items that require more points
-  const getUnobtainableItems = () => {
-    return items.filter(item => item.pointsRequired > balance)
-      .sort((a, b) => a.pointsRequired - b.pointsRequired);
-  };
-  
-  const obtainableItems = getObtainableItems();
-  const unobtainableItems = getUnobtainableItems();
+  const redeemableItems = getRedeemableItems(wallet.program, wallet.balance);
+  const programDisplayName = getProgramDisplayName(wallet.program);
   
   return (
-    <Card className="bg-white shadow-md border border-gray-100 overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary-50 to-white p-6">
-        <CardTitle className="text-xl font-bold text-gray-900">
-          Points Translator
-        </CardTitle>
-        <CardDescription>
-          What your {getProgramDisplayName(program as LoyaltyProgram)} points can get you in the real world
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="p-6">
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700">
-            Current balance: <span className="font-bold text-primary-600">{balance.toLocaleString()} points</span>
-          </p>
-        </div>
+    <Card className="border border-gray-100 bg-white/50 backdrop-blur-sm overflow-hidden">
+      <CardContent className="p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">
+          Your {programDisplayName} points could get you:
+        </h3>
         
-        {obtainableItems.length > 0 ? (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">You have enough points for:</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {obtainableItems.map((item, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-start p-3 bg-gradient-to-r from-green-50 to-transparent border border-green-100 rounded-lg"
-                >
-                  <div className="flex-shrink-0 mr-3 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700">
-                    {item.icon}
+        {redeemableItems.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            {redeemableItems.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className={`p-3 rounded-lg border flex items-center gap-3 ${
+                  item.pointsRequired <= wallet.balance 
+                    ? 'border-green-100 bg-green-50' 
+                    : 'border-amber-100 bg-amber-50'
+                }`}
+              >
+                <div className={`p-2 rounded-full ${
+                  item.pointsRequired <= wallet.balance 
+                    ? 'bg-green-100 text-green-600' 
+                    : 'bg-amber-100 text-amber-600'
+                }`}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{item.name}</p>
+                  <p className="text-xs text-gray-500">{item.description}</p>
+                  <div className="flex items-center mt-1">
+                    <span className={`text-xs font-semibold ${
+                      item.pointsRequired <= wallet.balance 
+                        ? 'text-green-600' 
+                        : 'text-amber-600'
+                    }`}>
+                      {item.pointsRequired.toLocaleString()} points
+                    </span>
+                    {item.pointsRequired > wallet.balance && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        (Need {(item.pointsRequired - wallet.balance).toLocaleString()} more)
+                      </span>
+                    )}
                   </div>
-                  <div className="flex-grow">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-600">{item.description}</p>
-                    <div className="mt-1 text-xs text-gray-500">
-                      <span className="font-medium">{item.pointsRequired.toLocaleString()} points</span>
-                    </div>
-                  </div>
-                  <Button className="ml-2 bg-primary-500 text-white text-xs px-3 py-1 h-auto rounded-md" variant="default" size="sm">
-                    Redeem
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         ) : (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center">
-            <p className="text-gray-600">You need more points to redeem rewards</p>
-          </div>
-        )}
-        
-        {unobtainableItems.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Keep earning for these rewards:</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {unobtainableItems.slice(0, 3).map((item, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + (index * 0.1) }}
-                  className="flex items-start p-3 bg-gray-50 border border-gray-200 rounded-lg"
-                >
-                  <div className="flex-shrink-0 mr-3 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">
-                    {item.icon}
-                  </div>
-                  <div className="flex-grow">
-                    <h4 className="font-medium text-gray-800">{item.name}</h4>
-                    <p className="text-sm text-gray-600">{item.description}</p>
-                    <div className="mt-1 flex items-center text-xs">
-                      <div className="flex-grow bg-gray-200 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-primary-300 h-full rounded-full"
-                          style={{ 
-                            width: `${Math.min(100, (balance / item.pointsRequired) * 100)}%` 
-                          }}
-                        />
-                      </div>
-                      <span className="ml-2 text-gray-600">
-                        {balance.toLocaleString()} / {item.pointsRequired.toLocaleString()} points
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 py-2">
+            Your balance isn't enough for standard rewards yet. Keep collecting points!
+          </p>
         )}
       </CardContent>
     </Card>
