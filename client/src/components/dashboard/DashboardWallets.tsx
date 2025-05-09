@@ -4,7 +4,7 @@ import { getQueryFn } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Wallet } from '@shared/schema';
-import LoyaltyCard from '../loyaltyprograms/LoyaltyCard';
+import LoyaltyCardWithTranslator from '../loyaltyprograms/LoyaltyCardWithTranslator';
 import { useLocation } from 'wouter';
 
 export default function DashboardWallets() {
