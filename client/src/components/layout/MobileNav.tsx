@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, RefreshCw, History, Coins, ShoppingBag, BarChart3 } from 'lucide-react';
+import { Home, RefreshCw, History, Coins, ShoppingBag, BarChart3, GraduationCap } from 'lucide-react';
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -12,6 +12,7 @@ export default function MobileNav() {
     { id: 'history', href: '/#history', icon: History, label: 'History' },
     { id: 'tokenization', href: '/tokenization', icon: Coins, label: 'Tokens' },
     { id: 'merchant', href: '/merchant', icon: ShoppingBag, label: 'Merchant' },
+    { id: 'tutorial', href: '/tutorial', icon: GraduationCap, label: 'Tutorial' },
   ];
   
   const handleTabClick = (tabId: string) => {
