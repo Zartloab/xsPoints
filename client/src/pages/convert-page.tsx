@@ -120,7 +120,6 @@ export default function ConvertPage() {
       toast({
         title: "Conversion Successful",
         description: "Your points have been successfully converted",
-        variant: "success",
       });
       
       // Refresh wallets data and transactions
