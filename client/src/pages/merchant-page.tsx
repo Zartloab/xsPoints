@@ -23,6 +23,7 @@ import {
   Store,
   BarChart3,
   Users,
+  User,
   Code,
   Settings,
   Zap,
@@ -342,7 +343,7 @@ export default function MerchantPage() {
         </div>
 
         {/* Merchant Portal Tabs */}
-        <Tabs defaultValue="promotions" className="w-full">
+        <Tabs defaultValue="issue-points" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="promotions">Promotions</TabsTrigger>
             <TabsTrigger value="issue-points">Issue Points</TabsTrigger>
