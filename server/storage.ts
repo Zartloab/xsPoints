@@ -117,18 +117,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(schema.users).where(eq(schema.users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(schema.users).where(eq(schema.users.username, username));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     // Insert the user, kycVerified defaults to 'unverified'
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(schema.users).values(insertUser).returning();
     
     // Create default wallets for new user
     await this.createWallet({
@@ -159,29 +159,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserWallets(userId: number): Promise<Wallet[]> {
-    return db.select().from(wallets).where(eq(wallets.userId, userId));
+    return db.select().from(schema.wallets).where(eq(schema.wallets.userId, userId));
   }
 
   async getWallet(userId: number, program: LoyaltyProgram): Promise<Wallet | undefined> {
-    const [wallet] = await db.select().from(wallets).where(
+    const [wallet] = await db.select().from(schema.wallets).where(
       and(
-        eq(wallets.userId, userId),
-        eq(wallets.program, program)
+        eq(schema.wallets.userId, userId),
+        eq(schema.wallets.program, program)
       )
     );
     return wallet;
   }
 
   async createWallet(wallet: Omit<Wallet, "id" | "createdAt">): Promise<Wallet> {
-    const [newWallet] = await db.insert(wallets).values(wallet).returning();
+    const [newWallet] = await db.insert(schema.wallets).values(wallet).returning();
     return newWallet;
   }
 
   async updateWalletBalance(id: number, balance: number): Promise<Wallet> {
     const [updatedWallet] = await db
-      .update(wallets)
+      .update(schema.wallets)
       .set({ balance })
-      .where(eq(wallets.id, id))
+      .where(eq(schema.wallets.id, id))
       .returning();
       
     if (!updatedWallet) {
@@ -193,12 +193,12 @@ export class DatabaseStorage implements IStorage {
   
   async updateWalletAccount(id: number, accountNumber: string | null, accountName: string | null): Promise<Wallet> {
     const [updatedWallet] = await db
-      .update(wallets)
+      .update(schema.wallets)
       .set({ 
         accountNumber, 
         accountName 
       })
-      .where(eq(wallets.id, id))
+      .where(eq(schema.wallets.id, id))
       .returning();
       
     if (!updatedWallet) {
@@ -211,14 +211,14 @@ export class DatabaseStorage implements IStorage {
   async getUserTransactions(userId: number): Promise<Transaction[]> {
     return db
       .select()
-      .from(transactions)
-      .where(eq(transactions.userId, userId))
-      .orderBy(desc(transactions.timestamp));
+      .from(schema.transactions)
+      .where(eq(schema.transactions.userId, userId))
+      .orderBy(desc(schema.transactions.timestamp));
   }
 
   async createTransaction(transaction: Omit<Transaction, "id" | "timestamp">): Promise<Transaction> {
     const [newTransaction] = await db
-      .insert(transactions)
+      .insert(schema.transactions)
       .values(transaction)
       .returning();
     
@@ -255,14 +255,14 @@ export class DatabaseStorage implements IStorage {
     
     // Update user's stats
     const [updatedUser] = await db
-      .update(users)
+      .update(schema.users)
       .set({
         pointsConverted: (user.pointsConverted || 0) + pointsConverted,
         monthlyPointsConverted: monthlyPointsConverted + pointsConverted,
         totalFeesPaid: (user.totalFeesPaid || 0) + fee,
         lastMonthReset: lastReset
       })
-      .where(eq(users.id, userId))
+      .where(eq(schema.users.id, userId))
       .returning();
     
     // Check if the user qualifies for a tier upgrade
@@ -287,12 +287,12 @@ export class DatabaseStorage implements IStorage {
   
   async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
     const [updatedUser] = await db
-      .update(users)
+      .update(schema.users)
       .set({
         membershipTier: tier,
         tierExpiresAt: expiresAt || null
       })
-      .where(eq(users.id, userId))
+      .where(eq(schema.users.id, userId))
       .returning();
       
     if (!updatedUser) {
@@ -309,8 +309,8 @@ export class DatabaseStorage implements IStorage {
     // Get all tier benefits ordered by threshold (descending)
     const allTiers = await db
       .select()
-      .from(tierBenefits)
-      .orderBy(desc(tierBenefits.monthlyPointsThreshold));
+      .from(schema.tierBenefits)
+      .orderBy(desc(schema.tierBenefits.monthlyPointsThreshold));
     
     // Start with the highest tier and move down
     let newTier: MembershipTier = 'STANDARD';
@@ -337,8 +337,8 @@ export class DatabaseStorage implements IStorage {
   async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
     const [benefits] = await db
       .select()
-      .from(tierBenefits)
-      .where(eq(tierBenefits.tier, tier));
+      .from(schema.tierBenefits)
+      .where(eq(schema.tierBenefits.tier, tier));
     
     return benefits;
   }
@@ -350,16 +350,16 @@ export class DatabaseStorage implements IStorage {
     if (existingTier) {
       // Update existing tier
       const [updatedTier] = await db
-        .update(tierBenefits)
+        .update(schema.tierBenefits)
         .set(benefits)
-        .where(eq(tierBenefits.tier, benefits.tier))
+        .where(eq(schema.tierBenefits.tier, benefits.tier))
         .returning();
       
       return updatedTier;
     } else {
       // Create new tier
       const [newTier] = await db
-        .insert(tierBenefits)
+        .insert(schema.tierBenefits)
         .values(benefits)
         .returning();
       
@@ -370,7 +370,7 @@ export class DatabaseStorage implements IStorage {
   async initializeTierBenefits(): Promise<void> {
     try {
       // Check if tier benefits exist
-      const existingBenefits = await db.select().from(tierBenefits);
+      const existingBenefits = await db.select().from(schema.tierBenefits);
       
       if (existingBenefits.length === 0) {
         console.log("Initializing tier benefits...");
@@ -429,11 +429,11 @@ export class DatabaseStorage implements IStorage {
       // First check our database for the most recent rate
       const [rate] = await db
         .select()
-        .from(exchangeRates)
+        .from(schema.exchangeRates)
         .where(
           and(
-            eq(exchangeRates.fromProgram, fromProgram),
-            eq(exchangeRates.toProgram, toProgram)
+            eq(schema.exchangeRates.fromProgram, fromProgram),
+            eq(schema.exchangeRates.toProgram, toProgram)
           )
         );
       
@@ -453,15 +453,15 @@ export class DatabaseStorage implements IStorage {
         if (rate) {
           // Update existing rate
           const [updated] = await db
-            .update(exchangeRates)
+            .update(schema.exchangeRates)
             .set({ 
               rate: updatedRate.rate,
               lastUpdated: new Date()
             })
             .where(
               and(
-                eq(exchangeRates.fromProgram, fromProgram),
-                eq(exchangeRates.toProgram, toProgram)
+                eq(schema.exchangeRates.fromProgram, fromProgram),
+                eq(schema.exchangeRates.toProgram, toProgram)
               )
             )
             .returning();
@@ -470,7 +470,7 @@ export class DatabaseStorage implements IStorage {
         } else {
           // Insert new rate
           const [newRate] = await db
-            .insert(exchangeRates)
+            .insert(schema.exchangeRates)
             .values({
               fromProgram,
               toProgram,
@@ -490,11 +490,11 @@ export class DatabaseStorage implements IStorage {
       // Fall back to database rate if API call fails
       const [fallbackRate] = await db
         .select()
-        .from(exchangeRates)
+        .from(schema.exchangeRates)
         .where(
           and(
-            eq(exchangeRates.fromProgram, fromProgram),
-            eq(exchangeRates.toProgram, toProgram)
+            eq(schema.exchangeRates.fromProgram, fromProgram),
+            eq(schema.exchangeRates.toProgram, toProgram)
           )
         );
       
