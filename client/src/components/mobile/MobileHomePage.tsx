@@ -133,7 +133,7 @@ const MobileHomePage: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Membership Tier</p>
                 <div className="flex items-center gap-2">
                   <Award className="text-yellow-500" size={18} />
-                  <p className="font-semibold">{user?.tier || 'Standard'}</p>
+                  <p className="font-semibold">{user?.membershipTier || 'STANDARD'}</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => toast({ title: "Mobile Profile", description: "Mobile profile view is coming soon." })}>

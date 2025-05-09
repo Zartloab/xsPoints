@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { usePreferredLayout } from '@/hooks/use-mobile';
 import MainLayout from '@/components/layout/MainLayout';
+import MobileExplorerPage from '@/components/mobile/MobileExplorerPage';
 import {
   Card,
   CardContent,
@@ -129,6 +131,12 @@ const mockConversionData = {
 export default function ExplorerPage() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState('30days');
+  const { useMobileLayout } = usePreferredLayout();
+  
+  // Use mobile-optimized layout on mobile devices
+  if (useMobileLayout) {
+    return <MobileExplorerPage />;
+  }
 
   return (
     <MainLayout>
