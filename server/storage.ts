@@ -257,30 +257,32 @@ export class DatabaseStorage implements IStorage {
     // Insert the user, kycVerified defaults to 'unverified'
     const [user] = await db.insert(schema.users).values(insertUser).returning();
     
-    // Create default wallets for new user
-    await this.createWallet({
-      userId: user.id,
-      program: "QANTAS",
-      balance: 0,
-      accountNumber: null,
-      accountName: null,
-    });
+    // All supported loyalty programs
+    const allPrograms: LoyaltyProgram[] = [
+      'QANTAS', 
+      'GYG', 
+      'XPOINTS', 
+      'VELOCITY', 
+      'AMEX', 
+      'FLYBUYS', 
+      'HILTON', 
+      'MARRIOTT',
+      'AIRBNB',
+      'DELTA'
+    ];
     
-    await this.createWallet({
-      userId: user.id,
-      program: "GYG",
-      balance: 0,
-      accountNumber: null,
-      accountName: null,
-    });
-    
-    await this.createWallet({
-      userId: user.id,
-      program: "XPOINTS",
-      balance: 1000, // Give new users some starting xPoints
-      accountNumber: null,
-      accountName: null,
-    });
+    // Create wallets for all loyalty programs
+    for (const program of allPrograms) {
+      const balance = program === "XPOINTS" ? 1000 : 0; // Only XPOINTS starts with a balance
+      
+      await this.createWallet({
+        userId: user.id,
+        program,
+        balance,
+        accountNumber: null,
+        accountName: null,
+      });
+    }
     
     return user;
   }
