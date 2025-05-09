@@ -69,6 +69,9 @@ export class DatabaseStorage implements IStorage {
     
     // Set up initial exchange rates if they don't exist
     this.initializeExchangeRates();
+    
+    // Set up initial tier benefits if they don't exist
+    this.initializeTierBenefits();
   }
 
   private async initializeExchangeRates() {
@@ -218,8 +221,207 @@ export class DatabaseStorage implements IStorage {
       .insert(transactions)
       .values(transaction)
       .returning();
+    
+    // Update user's stats when a transaction is created with fees
+    if (transaction.feeApplied > 0) {
+      await this.updateUserStats(transaction.userId, transaction.amountFrom, transaction.feeApplied);
+    } else {
+      // Even if no fee, update conversion amount stats
+      await this.updateUserStats(transaction.userId, transaction.amountFrom, 0);
+    }
       
     return newTransaction;
+  }
+  
+  async updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    // Get current date for comparison
+    const now = new Date();
+    
+    // Check if we need to reset monthly stats
+    let monthlyPointsConverted = user.monthlyPointsConverted || 0;
+    let lastReset = user.lastMonthReset;
+    
+    // If last reset is null or more than a month ago, reset monthly points
+    if (!lastReset || new Date(lastReset).getMonth() !== now.getMonth() || 
+        new Date(lastReset).getFullYear() !== now.getFullYear()) {
+      monthlyPointsConverted = 0;
+      lastReset = now;
+    }
+    
+    // Update user's stats
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        pointsConverted: (user.pointsConverted || 0) + pointsConverted,
+        monthlyPointsConverted: monthlyPointsConverted + pointsConverted,
+        totalFeesPaid: (user.totalFeesPaid || 0) + fee,
+        lastMonthReset: lastReset
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    // Check if the user qualifies for a tier upgrade
+    await this.checkAndUpdateUserTier(userId);
+    
+    return updatedUser;
+  }
+  
+  async getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return {
+      pointsConverted: user.pointsConverted || 0,
+      feesPaid: user.totalFeesPaid || 0,
+      monthlyPoints: user.monthlyPointsConverted || 0,
+      tier: user.membershipTier || 'STANDARD'
+    };
+  }
+  
+  async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        membershipTier: tier,
+        tierExpiresAt: expiresAt || null
+      })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return updatedUser;
+  }
+  
+  private async checkAndUpdateUserTier(userId: number): Promise<void> {
+    const user = await this.getUser(userId);
+    if (!user) return;
+    
+    // Get all tier benefits ordered by threshold (descending)
+    const allTiers = await db
+      .select()
+      .from(tierBenefits)
+      .orderBy(desc(tierBenefits.monthlyPointsThreshold));
+    
+    // Start with the highest tier and move down
+    let newTier: MembershipTier = 'STANDARD';
+    let expiryDays = 30; // Default
+    
+    for (const tier of allTiers) {
+      if (user.monthlyPointsConverted >= tier.monthlyPointsThreshold) {
+        newTier = tier.tier;
+        expiryDays = tier.monthlyExpiryDays;
+        break;
+      }
+    }
+    
+    // If tier is different or expiry date needs updating
+    if (newTier !== user.membershipTier || !user.tierExpiresAt) {
+      const now = new Date();
+      const expiryDate = new Date(now);
+      expiryDate.setDate(expiryDate.getDate() + expiryDays);
+      
+      await this.updateUserTier(userId, newTier, expiryDate);
+    }
+  }
+  
+  async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
+    const [benefits] = await db
+      .select()
+      .from(tierBenefits)
+      .where(eq(tierBenefits.tier, tier));
+    
+    return benefits;
+  }
+  
+  async createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit> {
+    // Check if tier already exists
+    const existingTier = await this.getTierBenefits(benefits.tier);
+    
+    if (existingTier) {
+      // Update existing tier
+      const [updatedTier] = await db
+        .update(tierBenefits)
+        .set(benefits)
+        .where(eq(tierBenefits.tier, benefits.tier))
+        .returning();
+      
+      return updatedTier;
+    } else {
+      // Create new tier
+      const [newTier] = await db
+        .insert(tierBenefits)
+        .values(benefits)
+        .returning();
+      
+      return newTier;
+    }
+  }
+  
+  async initializeTierBenefits(): Promise<void> {
+    try {
+      // Check if tier benefits exist
+      const existingBenefits = await db.select().from(tierBenefits);
+      
+      if (existingBenefits.length === 0) {
+        console.log("Initializing tier benefits...");
+        // Define initial tiers
+        const initialTiers: InsertTierBenefits[] = [
+          {
+            tier: 'STANDARD',
+            monthlyPointsThreshold: 0, // No minimum
+            freeConversionLimit: 10000, // 10k free points
+            conversionFeeRate: "0.005", // 0.5%
+            p2pMinimumFee: "0.005", // 0.5% minimum fee
+            p2pMaximumFee: "0.03", // 3% max fee
+            monthlyExpiryDays: 30, // Expires after 30 days
+          },
+          {
+            tier: 'SILVER',
+            monthlyPointsThreshold: 50000, // 50k points in a month
+            freeConversionLimit: 25000, // 25k free points
+            conversionFeeRate: "0.004", // 0.4%
+            p2pMinimumFee: "0.004", // 0.4% minimum fee
+            p2pMaximumFee: "0.025", // 2.5% max fee
+            monthlyExpiryDays: 60, // Expires after 60 days
+          },
+          {
+            tier: 'GOLD',
+            monthlyPointsThreshold: 100000, // 100k points in a month
+            freeConversionLimit: 50000, // 50k free points
+            conversionFeeRate: "0.003", // 0.3%
+            p2pMinimumFee: "0.003", // 0.3% minimum fee
+            p2pMaximumFee: "0.02", // 2% max fee
+            monthlyExpiryDays: 90, // Expires after 90 days
+          },
+          {
+            tier: 'PLATINUM',
+            monthlyPointsThreshold: 250000, // 250k points in a month
+            freeConversionLimit: 100000, // 100k free points
+            conversionFeeRate: "0.002", // 0.2%
+            p2pMinimumFee: "0.002", // 0.2% minimum fee
+            p2pMaximumFee: "0.015", // 1.5% max fee
+            monthlyExpiryDays: 120, // Expires after 120 days
+          }
+        ];
+        
+        // Insert initial tier benefits
+        for (const tier of initialTiers) {
+          await this.createTierBenefits(tier);
+        }
+      }
+    } catch (error) {
+      console.error("Error initializing tier benefits:", error);
+    }
   }
 
   async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
@@ -334,6 +536,130 @@ export class DatabaseStorage implements IStorage {
       console.error("Error fetching real-time rate:", error);
       return null;
     }
+  }
+  
+  // Business analytics methods
+  async getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined> {
+    const [analytics] = await db
+      .select()
+      .from(businessAnalytics)
+      .where(eq(businessAnalytics.businessId, businessId));
+    
+    return analytics;
+  }
+  
+  async updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics> {
+    const existingAnalytics = await this.getBusinessAnalytics(businessId);
+    
+    if (existingAnalytics) {
+      // Update existing analytics
+      const [updated] = await db
+        .update(businessAnalytics)
+        .set(data)
+        .where(eq(businessAnalytics.businessId, businessId))
+        .returning();
+      
+      return updated;
+    } else {
+      // Create new analytics record
+      const [newAnalytics] = await db
+        .insert(businessAnalytics)
+        .values({
+          businessId,
+          totalPointsIssued: data.totalPointsIssued || 0,
+          totalCustomers: data.totalCustomers || 0,
+          totalIssuances: data.totalIssuances || 0,
+          lastIssuanceDate: data.lastIssuanceDate || new Date()
+        })
+        .returning();
+      
+      return newAnalytics;
+    }
+  }
+  
+  async bulkIssuePoints(data: BulkPointIssuanceData): Promise<number> {
+    let successCount = 0;
+    
+    // Begin transaction for consistency
+    const tx = await db.transaction();
+    
+    try {
+      // Get user IDs
+      const userIds = data.userIds;
+      
+      for (const userId of userIds) {
+        // Get the user
+        const user = await this.getUser(userId);
+        
+        if (user) {
+          // Get the user's xPoints wallet
+          const wallet = await this.getWallet(user.id, 'XPOINTS');
+          
+          if (wallet) {
+            // Update wallet balance
+            await this.updateWalletBalance(wallet.id, wallet.balance + data.pointsPerUser);
+            
+            // Record the transaction
+            await this.createTransaction({
+              userId: user.id,
+              fromProgram: 'XPOINTS',
+              toProgram: 'XPOINTS',
+              amountFrom: data.pointsPerUser,
+              amountTo: data.pointsPerUser,
+              feeApplied: 0,
+              description: `Points issued by business program ${data.businessProgramId}: ${data.reason || 'Bulk issuance'}`
+            });
+            
+            successCount++;
+          }
+        }
+      }
+      
+      // Update business analytics
+      const businessId = await this.getBusinessIdFromProgram(data.businessProgramId);
+      
+      if (businessId) {
+        const analytics = await this.getBusinessAnalytics(businessId);
+        
+        // If we have analytics, update them
+        if (analytics) {
+          await this.updateBusinessAnalytics(businessId, {
+            totalPointsIssued: (parseInt(analytics.totalPointsIssued || "0") + 
+              (data.pointsPerUser * successCount)).toString(),
+            totalUsers: analytics.totalUsers + successCount,
+            activeUsers: analytics.activeUsers + successCount
+          });
+        } else {
+          // Create new analytics record
+          await db.insert(businessAnalytics).values({
+            businessId,
+            totalUsers: successCount,
+            activeUsers: successCount,
+            totalPointsIssued: (data.pointsPerUser * successCount).toString(),
+            totalPointsRedeemed: "0",
+            averagePointsPerUser: data.pointsPerUser.toString(),
+            lastUpdated: new Date()
+          });
+        }
+      }
+      
+      await tx.commit();
+      return successCount;
+    } catch (error) {
+      console.error("Error in bulk point issuance:", error);
+      await tx.rollback();
+      throw error;
+    }
+  }
+  
+  // Helper method to get business ID from a program ID
+  private async getBusinessIdFromProgram(businessProgramId: number): Promise<number | null> {
+    const [program] = await db
+      .select()
+      .from(businessPrograms)
+      .where(eq(businessPrograms.id, businessProgramId));
+    
+    return program ? program.businessId : null;
   }
 }
 
@@ -508,6 +834,53 @@ export class MemStorage implements IStorage {
   async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
     const key = `${fromProgram}-${toProgram}`;
     return this.exchangeRates.get(key);
+  }
+  
+  // Tier benefits methods
+  async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async initializeTierBenefits(): Promise<void> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  // Business analytics methods
+  async getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async bulkIssuePoints(data: BulkPointIssuanceData): Promise<number> {
+    // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
   }
 }
 
