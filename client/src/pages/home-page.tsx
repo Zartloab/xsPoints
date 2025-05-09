@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
+import MembershipTierCard from '@/components/dashboard/MembershipTierCard';
 import ConversionForm from '@/components/transaction/ConversionForm';
 import TransactionHistory from '@/components/transaction/TransactionHistory';
 import LinkAccountForm from '@/components/account/LinkAccountForm';
@@ -22,6 +23,10 @@ export default function HomePage() {
   return (
     <MainLayout>
       <DashboardWallets />
+      
+      <div className="mb-8">
+        <MembershipTierCard />
+      </div>
       
       <ConversionForm />
       

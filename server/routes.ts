@@ -84,6 +84,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch transactions" });
     }
   });
+  
+  // Get user stats (for membership tier progress)
+  app.get("/api/user-stats", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const stats = await storage.getUserStats(req.user!.id);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
 
   // Get exchange rates
   app.get("/api/exchange-rates", async (req, res) => {
