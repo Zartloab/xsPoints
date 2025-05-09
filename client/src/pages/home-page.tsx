@@ -1,15 +1,24 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { usePreferredLayout } from '@/hooks/use-mobile';
 import MainLayout from '@/components/layout/MainLayout';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
 import ConversionForm from '@/components/transaction/ConversionForm';
 import TransactionHistory from '@/components/transaction/TransactionHistory';
 import LinkAccountForm from '@/components/account/LinkAccountForm';
 import ConnectedAccounts from '@/components/account/ConnectedAccounts';
+import MobileHomePage from '@/components/mobile/MobileHomePage';
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { useMobileLayout } = usePreferredLayout();
 
+  // Use mobile-optimized layout on mobile devices
+  if (useMobileLayout) {
+    return <MobileHomePage />;
+  }
+
+  // Desktop layout
   return (
     <MainLayout>
       <DashboardWallets />
