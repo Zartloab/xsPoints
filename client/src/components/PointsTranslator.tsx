@@ -35,7 +35,15 @@ const PointsTranslator: React.FC<PointsTranslatorProps> = ({
   
   // Get user wallets to show available points
   const { user } = useAuth();
-  const { data: wallets, isLoading: walletsLoading } = useQuery({
+  const { data: wallets, isLoading: walletsLoading } = useQuery<Array<{
+    id: number;
+    userId: number;
+    program: string;
+    balance: number;
+    accountNumber: string | null;
+    accountName: string | null;
+    createdAt: Date;
+  }>>({
     queryKey: ['/api/wallets'],
     enabled: !!user,
   });

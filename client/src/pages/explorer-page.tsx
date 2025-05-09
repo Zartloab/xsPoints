@@ -794,6 +794,10 @@ export default function ExplorerPage() {
               </div>
             </div>
           </TabsContent>
+          
+          <TabsContent value="translator" className="p-4 border rounded-md mt-4">
+            <PointsTranslator className="shadow-none border-0" />
+          </TabsContent>
         </Tabs>
       </div>
     </MainLayout>
