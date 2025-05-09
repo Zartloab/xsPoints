@@ -42,7 +42,7 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
   const { name: programName, description: programDescription } = getProgramInfo();
   
   // Get exchange rate to xPoints if not already xPoints
-  const { data: exchangeRate } = useQuery<ExchangeRate>({
+  const { data: exchangeRate } = useQuery<{rate: string}>({
     queryKey: [
       `/api/exchange-rates?from=${wallet.program}&to=XPOINTS`,
     ],

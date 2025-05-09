@@ -13,6 +13,34 @@ export default function ConversionForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   
+  // Function to get proper program name display
+  const getProgramName = (program: string): string => {
+    switch (program) {
+      case 'QANTAS':
+        return 'Qantas';
+      case 'GYG':
+        return 'GYG';
+      case 'XPOINTS':
+        return 'xPoints';
+      case 'VELOCITY':
+        return 'Velocity';
+      case 'AMEX':
+        return 'American Express';
+      case 'FLYBUYS':
+        return 'Flybuys';
+      case 'HILTON':
+        return 'Hilton';
+      case 'MARRIOTT':
+        return 'Marriott';
+      case 'AIRBNB':
+        return 'Airbnb';
+      case 'DELTA':
+        return 'Delta';
+      default:
+        return program;
+    }
+  };
+  
   // State for form
   const [fromProgram, setFromProgram] = useState<string>("QANTAS");
   const [toProgram, setToProgram] = useState<string>("GYG");
@@ -215,6 +243,13 @@ export default function ConversionForm() {
                     <SelectItem value="QANTAS">Qantas Frequent Flyer</SelectItem>
                     <SelectItem value="GYG">Guzman y Gomez Loyalty</SelectItem>
                     <SelectItem value="XPOINTS">xPoints</SelectItem>
+                    <SelectItem value="VELOCITY">Velocity Frequent Flyer</SelectItem>
+                    <SelectItem value="AMEX">American Express Rewards</SelectItem>
+                    <SelectItem value="FLYBUYS">Flybuys Rewards</SelectItem>
+                    <SelectItem value="HILTON">Hilton Honors</SelectItem>
+                    <SelectItem value="MARRIOTT">Marriott Bonvoy</SelectItem>
+                    <SelectItem value="AIRBNB">Airbnb Credits</SelectItem>
+                    <SelectItem value="DELTA">Delta SkyMiles</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -245,9 +280,9 @@ export default function ConversionForm() {
                     Loading rates...
                   </span>
                 ) : (
-                  fromProgram === 'QANTAS' ? 'Rate: 1 Qantas Point = 0.5 xPoints' :
-                  fromProgram === 'GYG' ? 'Rate: 1 GYG Point = 0.8 xPoints' :
-                  'Rate: 1 xPoint = 0.8 GYG Points'
+                  fromProgram === 'XPOINTS' 
+                    ? `Rate: 1 xPoint = ${directRate?.rate || '-'} ${toProgram} Points` 
+                    : `Rate: 1 ${fromProgram} Point = ${fromToXpRate?.rate || '-'} xPoints`
                 )}
               </div>
             </div>
@@ -281,6 +316,13 @@ export default function ConversionForm() {
                     <SelectItem value="QANTAS">Qantas Frequent Flyer</SelectItem>
                     <SelectItem value="GYG">Guzman y Gomez Loyalty</SelectItem>
                     <SelectItem value="XPOINTS">xPoints</SelectItem>
+                    <SelectItem value="VELOCITY">Velocity Frequent Flyer</SelectItem>
+                    <SelectItem value="AMEX">American Express Rewards</SelectItem>
+                    <SelectItem value="FLYBUYS">Flybuys Rewards</SelectItem>
+                    <SelectItem value="HILTON">Hilton Honors</SelectItem>
+                    <SelectItem value="MARRIOTT">Marriott Bonvoy</SelectItem>
+                    <SelectItem value="AIRBNB">Airbnb Credits</SelectItem>
+                    <SelectItem value="DELTA">Delta SkyMiles</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -303,9 +345,9 @@ export default function ConversionForm() {
                     Loading rates...
                   </span>
                 ) : (
-                  toProgram === 'QANTAS' ? 'Rate: 1 xPoint = 1.8 Qantas Points' :
-                  toProgram === 'GYG' ? 'Rate: 1 xPoint = 1.25 GYG Points' :
-                  'Rate: 1 xPoint = 1 xPoint'
+                  toProgram === 'XPOINTS' 
+                    ? `Rate: 1 ${fromProgram} Point = ${fromToXpRate?.rate || '-'} xPoints` 
+                    : `Rate: 1 xPoint = ${xpToDestRate?.rate || '-'} ${toProgram} Points`
                 )}
               </div>
             </div>
