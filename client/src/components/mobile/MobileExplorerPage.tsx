@@ -258,6 +258,11 @@ const MobileExplorerPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-3">Points Translator</h2>
+        <MobilePointsTranslator selectedProgram={selectedProgram} />
+      </div>
     </div>
   );
 };
