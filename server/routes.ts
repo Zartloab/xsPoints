@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import apiRouter from "./api";
+import docsRouter from "./api/docs";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
@@ -898,6 +900,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create HTTP server
+  // ===== DEVELOPER API ROUTES =====
+  
+  // Register API routes
+  app.use('/api/v1', apiRouter);
+  
+  // API documentation
+  app.use('/api/docs', docsRouter);
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
