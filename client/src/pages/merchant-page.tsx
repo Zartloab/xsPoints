@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import {
   Card,
@@ -26,7 +27,16 @@ import {
   Settings,
   Zap,
   CreditCard,
-  Tag
+  Tag,
+  Coins,
+  ChevronRight,
+  Search,
+  Upload,
+  Download,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -38,6 +48,19 @@ import {
 } from "@/components/ui/select";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 // Form schema for merchant promotion
 const promotionFormSchema = z.object({
@@ -50,11 +73,32 @@ const promotionFormSchema = z.object({
   isActive: z.boolean().default(false),
 });
 
+// Form schema for single customer point issuance
+const singleUserPointsSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  points: z.coerce.number().positive("Points must be a positive number"),
+  reason: z.string().min(3, "Please provide a reason for the points issuance"),
+  expirationDate: z.string().optional(),
+  reference: z.string().optional(),
+});
+
+// Form schema for bulk point issuance
+const bulkPointsSchema = z.object({
+  userList: z.string().min(5, "Please enter at least one email address"),
+  pointsPerUser: z.coerce.number().positive("Points must be a positive number"),
+  reason: z.string().min(3, "Please provide a reason for the points issuance"),
+  expirationDate: z.string().optional(),
+  reference: z.string().optional(),
+});
+
 type PromotionFormValues = z.infer<typeof promotionFormSchema>;
+type SingleUserPointsValues = z.infer<typeof singleUserPointsSchema>;
+type BulkPointsValues = z.infer<typeof bulkPointsSchema>;
 
 export default function MerchantPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [issueMode, setIssueMode] = useState<'single' | 'bulk'>('single');
   
   // Sample merchant stats
   const merchantStats = {
@@ -68,8 +112,8 @@ export default function MerchantPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const apiKey = "xp_merchant_8a7b6c5d4e3f2g1h";
   
-  // Initialize form 
-  const form = useForm<PromotionFormValues>({
+  // Initialize promotion form 
+  const promotionForm = useForm<PromotionFormValues>({
     resolver: zodResolver(promotionFormSchema),
     defaultValues: {
       name: "",
@@ -81,8 +125,139 @@ export default function MerchantPage() {
       isActive: true,
     },
   });
+  
+  // Initialize single user points form
+  const singleUserForm = useForm<SingleUserPointsValues>({
+    resolver: zodResolver(singleUserPointsSchema),
+    defaultValues: {
+      email: "",
+      points: 100,
+      reason: "",
+      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+      reference: "",
+    },
+  });
+  
+  // Initialize bulk points form
+  const bulkPointsForm = useForm<BulkPointsValues>({
+    resolver: zodResolver(bulkPointsSchema),
+    defaultValues: {
+      userList: "",
+      pointsPerUser: 100,
+      reason: "",
+      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+      reference: "",
+    },
+  });
+  
+  // Mutation for issuing points to a single user
+  const singleUserMutation = useMutation({
+    mutationFn: async (data: SingleUserPointsValues) => {
+      // In a real implementation, this would be a proper API endpoint
+      const res = await apiRequest('POST', '/api/merchant/issue-points', {
+        userId: 1, // In the real implementation, we would look up the user by email
+        points: data.points,
+        reason: data.reason,
+        expirationDate: data.expirationDate,
+        reference: data.reference,
+        businessProgramId: 1, // In the real implementation, this would be the merchant's program ID
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Points issued",
+        description: `Successfully issued points to ${singleUserForm.getValues().email}`,
+      });
+      singleUserForm.reset({
+        email: "",
+        points: 100,
+        reason: "",
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+        reference: "",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error issuing points",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for issuing points to multiple users
+  const bulkUserMutation = useMutation({
+    mutationFn: async (data: BulkPointsValues) => {
+      // Parse the user list (comma or line separated emails)
+      const emails = data.userList
+        .split(/[,\n]/)
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+        
+      // In a real implementation, this would be a proper API endpoint
+      const res = await apiRequest('POST', '/api/merchant/bulk-issue-points', {
+        userIds: [1, 2, 3], // In the real implementation, we would look up the users by email
+        pointsPerUser: data.pointsPerUser,
+        reason: data.reason,
+        expirationDate: data.expirationDate,
+        reference: data.reference,
+        businessProgramId: 1, // In the real implementation, this would be the merchant's program ID
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Bulk points issued",
+        description: "Successfully issued points to multiple users",
+      });
+      bulkPointsForm.reset({
+        userList: "",
+        pointsPerUser: 100,
+        reason: "",
+        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+        reference: "",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error issuing points",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mock point issuance history data
+  const pointIssuanceHistory = [
+    {
+      id: 1,
+      user: "john.doe@example.com",
+      points: 500,
+      reason: "Welcome bonus",
+      date: "2023-05-01",
+      status: "active",
+    },
+    {
+      id: 2,
+      user: "jane.smith@example.com",
+      points: 250,
+      reason: "Purchase reward",
+      date: "2023-05-05",
+      status: "active",
+    },
+    {
+      id: 3,
+      user: "multiple-users",
+      points: 100,
+      reason: "Loyalty program launch",
+      date: "2023-04-15",
+      status: "active",
+      userCount: 45,
+    },
+  ];
 
-  const onSubmit = (data: PromotionFormValues) => {
+  const onPromotionSubmit = (data: PromotionFormValues) => {
     toast({
       title: "Promotion created",
       description: `Your promotion "${data.name}" has been created.`,
@@ -90,7 +265,15 @@ export default function MerchantPage() {
     
     console.log(data);
     // In a production environment, this would call a mutation to create the promotion
-    form.reset();
+    promotionForm.reset();
+  };
+  
+  const onSingleUserSubmit = (data: SingleUserPointsValues) => {
+    singleUserMutation.mutate(data);
+  };
+  
+  const onBulkPointsSubmit = (data: BulkPointsValues) => {
+    bulkUserMutation.mutate(data);
   };
 
   return (
@@ -160,8 +343,9 @@ export default function MerchantPage() {
 
         {/* Merchant Portal Tabs */}
         <Tabs defaultValue="promotions" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="promotions">Promotions</TabsTrigger>
+            <TabsTrigger value="issue-points">Issue Points</TabsTrigger>
             <TabsTrigger value="integration">API Integration</TabsTrigger>
             <TabsTrigger value="settings">Brand Settings</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -173,10 +357,10 @@ export default function MerchantPage() {
               <div>
                 <h3 className="text-lg font-medium mb-4">Create New Promotion</h3>
                 
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <Form {...promotionForm}>
+                  <form onSubmit={promotionForm.handleSubmit(onPromotionSubmit)} className="space-y-4">
                     <FormField
-                      control={form.control}
+                      control={promotionForm.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
@@ -190,7 +374,7 @@ export default function MerchantPage() {
                     />
                     
                     <FormField
-                      control={form.control}
+                      control={promotionForm.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
@@ -205,7 +389,7 @@ export default function MerchantPage() {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
-                        control={form.control}
+                        control={promotionForm.control}
                         name="program"
                         render={({ field }) => (
                           <FormItem>
@@ -231,7 +415,7 @@ export default function MerchantPage() {
                       />
                       
                       <FormField
-                        control={form.control}
+                        control={promotionForm.control}
                         name="multiplier"
                         render={({ field }) => (
                           <FormItem>
@@ -250,7 +434,7 @@ export default function MerchantPage() {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
-                        control={form.control}
+                        control={promotionForm.control}
                         name="startDate"
                         render={({ field }) => (
                           <FormItem>
@@ -264,7 +448,7 @@ export default function MerchantPage() {
                       />
                       
                       <FormField
-                        control={form.control}
+                        control={promotionForm.control}
                         name="endDate"
                         render={({ field }) => (
                           <FormItem>
@@ -279,7 +463,7 @@ export default function MerchantPage() {
                     </div>
                     
                     <FormField
-                      control={form.control}
+                      control={promotionForm.control}
                       name="isActive"
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -412,6 +596,272 @@ export default function MerchantPage() {
                       <Button variant="outline" size="sm">Duplicate</Button>
                     </CardFooter>
                   </Card>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Issue Points Tab */}
+          <TabsContent value="issue-points" className="p-4 border rounded-md mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Issue Points Form */}
+              <div className="space-y-6">
+                <div className="flex space-x-4 pb-4 border-b">
+                  <Button
+                    variant={issueMode === 'single' ? 'default' : 'outline'}
+                    onClick={() => setIssueMode('single')}
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Issue to Single User</span>
+                  </Button>
+                  <Button
+                    variant={issueMode === 'bulk' ? 'default' : 'outline'}
+                    onClick={() => setIssueMode('bulk')}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Bulk Issue</span>
+                  </Button>
+                </div>
+
+                {issueMode === 'single' ? (
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Issue Points to a Customer</h3>
+                    <Form {...singleUserForm}>
+                      <form onSubmit={singleUserForm.handleSubmit(onSingleUserSubmit)} className="space-y-4">
+                        <FormField
+                          control={singleUserForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Customer Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="customer@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={singleUserForm.control}
+                          name="points"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Points Amount</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" step="1" {...field} />
+                              </FormControl>
+                              <FormDescription>
+                                Number of xPoints to issue
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={singleUserForm.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reason</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Purchase reward, Welcome bonus, etc." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={singleUserForm.control}
+                            name="expirationDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Expiration Date (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={singleUserForm.control}
+                            name="reference"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Reference (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Order #123456" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <Button 
+                          type="submit" 
+                          className="w-full mt-2" 
+                          disabled={singleUserMutation.isPending}
+                        >
+                          {singleUserMutation.isPending && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Issue Points
+                        </Button>
+                      </form>
+                    </Form>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Bulk Issue Points</h3>
+                    <Form {...bulkPointsForm}>
+                      <form onSubmit={bulkPointsForm.handleSubmit(onBulkPointsSubmit)} className="space-y-4">
+                        <FormField
+                          control={bulkPointsForm.control}
+                          name="userList"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Customer Emails</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="customer1@example.com&#10;customer2@example.com&#10;customer3@example.com" 
+                                  className="min-h-[120px]"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                One email per line or comma-separated
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={bulkPointsForm.control}
+                          name="pointsPerUser"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Points Per User</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" step="1" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={bulkPointsForm.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reason</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Marketing campaign, Loyalty program launch, etc." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={bulkPointsForm.control}
+                            name="expirationDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Expiration Date (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={bulkPointsForm.control}
+                            name="reference"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Reference (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Campaign #ABC123" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <Button 
+                          type="submit" 
+                          className="w-full mt-2"
+                          disabled={bulkUserMutation.isPending}
+                        >
+                          {bulkUserMutation.isPending && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Issue Points to All Users
+                        </Button>
+                      </form>
+                    </Form>
+                  </div>
+                )}
+              </div>
+              
+              {/* Recent Points Issuance History */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Recent Points Issuance</h3>
+                
+                <div className="space-y-4">
+                  {pointIssuanceHistory.map((issue) => (
+                    <Card key={issue.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-base">
+                              {issue.userCount ? (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" /> 
+                                  <span>Bulk Issue ({issue.userCount} users)</span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  <User className="h-4 w-4" /> 
+                                  <span>{issue.user}</span>
+                                </span>
+                              )}
+                            </CardTitle>
+                            <CardDescription>{issue.reason}</CardDescription>
+                          </div>
+                          <Badge variant={issue.status === 'active' ? 'default' : 'secondary'}>
+                            {issue.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <div className="text-muted-foreground">Points</div>
+                            <div className="font-medium">{issue.points.toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Date</div>
+                            <div className="font-medium">{issue.date}</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             </div>
