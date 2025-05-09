@@ -1,335 +1,157 @@
 import { LoyaltyProgram } from '@shared/schema';
 
-// Type for translated value items
-export interface PointTranslation {
-  title: string;
+// Define types of rewards that points can be translated to
+export type PointTranslation = {
+  type: 'flight' | 'hotel' | 'dining' | 'shopping' | 'experience';
   description: string;
-  icon: string;
-  category: 'travel' | 'dining' | 'shopping' | 'entertainment' | 'services';
-  points: number;
-}
-
-// Translation thresholds by program
-interface TranslationThresholds {
-  [key: string]: {
-    flight: number;
-    hotel: number;
-    meal: number;
-    shopping: number;
-    entertainment: number;
-  };
-}
-
-const translationThresholds: TranslationThresholds = {
-  QANTAS: {
-    flight: 8000,    // Economy domestic flight
-    hotel: 15000,    // One night at a standard hotel
-    meal: 3500,      // Restaurant meal
-    shopping: 5000,  // $50 retail voucher
-    entertainment: 6000, // Movie tickets
-  },
-  GYG: {
-    flight: 11000,
-    hotel: 18000,
-    meal: 4000,
-    shopping: 5500,
-    entertainment: 7000,
-  },
-  XPOINTS: {
-    flight: 10000,
-    hotel: 16000,
-    meal: 3000,
-    shopping: 4500,
-    entertainment: 5500,
-  },
-  VELOCITY: {
-    flight: 7500,
-    hotel: 14000,
-    meal: 3200,
-    shopping: 4800,
-    entertainment: 5800,
-  },
-  AMEX: {
-    flight: 9000,
-    hotel: 16000,
-    meal: 3500,
-    shopping: 5000,
-    entertainment: 6500,
-  },
-  FLYBUYS: {
-    flight: 20000,
-    hotel: 35000,
-    meal: 8000,
-    shopping: 10000,
-    entertainment: 15000,
-  },
-  HILTON: {
-    flight: 25000,
-    hotel: 10000,
-    meal: 5000,
-    shopping: 12000,
-    entertainment: 15000,
-  },
-  MARRIOTT: {
-    flight: 25000,
-    hotel: 12000,
-    meal: 5500,
-    shopping: 13000,
-    entertainment: 16000,
-  },
-  AIRBNB: {
-    flight: 30000,
-    hotel: 15000, // For Airbnb stay
-    meal: 7000,
-    shopping: 12000,
-    entertainment: 18000,
-  },
-  DELTA: {
-    flight: 12500,
-    hotel: 20000,
-    meal: 5000,
-    shopping: 8000,
-    entertainment: 10000,
-  },
+  pointsRequired: number;
+  cashValue: number;  // Approximate value in dollars
 };
 
-// Main translations database by category
-const translations: { [category: string]: PointTranslation[] } = {
-  travel: [
-    {
-      title: 'Domestic Flight',
-      description: 'Economy class domestic return flight',
-      icon: '✈️',
-      category: 'travel',
-      points: 0, // Placeholder, filled dynamically
-    },
-    {
-      title: 'Hotel Stay',
-      description: 'One night at a standard hotel',
-      icon: '🏨',
-      category: 'travel',
-      points: 0,
-    },
-    {
-      title: 'Weekend Getaway',
-      description: 'Two nights accommodation and activities',
-      icon: '🧳',
-      category: 'travel',
-      points: 0,
-    },
-    {
-      title: 'Flight Upgrade',
-      description: 'Economy to business class upgrade',
-      icon: '🥂',
-      category: 'travel',
-      points: 0,
-    },
-  ],
-  dining: [
-    {
-      title: 'Restaurant Meal',
-      description: 'Dinner for two at a casual restaurant',
-      icon: '🍽️',
-      category: 'dining',
-      points: 0,
-    },
-    {
-      title: 'Coffee for a Month',
-      description: 'Daily coffee for 30 days',
-      icon: '☕',
-      category: 'dining',
-      points: 0,
-    },
-    {
-      title: 'Fine Dining Experience',
-      description: 'Premium dinner for two',
-      icon: '🍷',
-      category: 'dining',
-      points: 0,
-    },
-  ],
-  shopping: [
-    {
-      title: 'Gift Card',
-      description: '$50 retail shopping voucher',
-      icon: '🎁',
-      category: 'shopping',
-      points: 0,
-    },
-    {
-      title: 'Electronics',
-      description: 'Headphones or small gadget',
-      icon: '🎧',
-      category: 'shopping',
-      points: 0,
-    },
-    {
-      title: 'Fashion Item',
-      description: 'Clothing or accessories',
-      icon: '👕',
-      category: 'shopping',
-      points: 0,
-    },
-  ],
-  entertainment: [
-    {
-      title: 'Movie Night',
-      description: 'Two cinema tickets with snacks',
-      icon: '🎬',
-      category: 'entertainment',
-      points: 0,
-    },
-    {
-      title: 'Streaming Subscription',
-      description: 'One year of streaming service',
-      icon: '📺',
-      category: 'entertainment',
-      points: 0,
-    },
-    {
-      title: 'Concert Tickets',
-      description: 'Two tickets to a live performance',
-      icon: '🎵',
-      category: 'entertainment',
-      points: 0,
-    },
-  ],
-  services: [
-    {
-      title: 'Airport Lounge',
-      description: 'Single visit to an airport lounge',
-      icon: '🛋️',
-      category: 'services',
-      points: 0,
-    },
-    {
-      title: 'Spa Treatment',
-      description: 'Massage or facial treatment',
-      icon: '💆',
-      category: 'services',
-      points: 0,
-    },
-    {
-      title: 'Rideshare Credits',
-      description: 'Credit for taxi or rideshare services',
-      icon: '🚕',
-      category: 'services',
-      points: 0,
-    },
-  ],
+// Mapping of loyalty programs to their reward value per point (in dollars)
+const pointValueMap: Record<LoyaltyProgram, number> = {
+  QANTAS: 0.015,    // Approx $0.015 per Qantas point
+  GYG: 0.05,        // Approx $0.05 per GYG point
+  XPOINTS: 0.02,    // Approx $0.02 per xPoint
+  VELOCITY: 0.013,  // Approx $0.013 per Velocity point
+  AMEX: 0.015,      // Approx $0.015 per AMEX point
+  FLYBUYS: 0.005,   // Approx $0.005 per Flybuys point
+  HILTON: 0.005,    // Approx $0.005 per Hilton point
+  MARRIOTT: 0.008,  // Approx $0.008 per Marriott point
+  AIRBNB: 0.01,     // Approx $0.01 per Airbnb point
+  DELTA: 0.012,     // Approx $0.012 per Delta point
 };
 
-// Function to get translations for a specific program and an optional category
-export function getPointTranslations(
-  program: LoyaltyProgram,
-  category?: string,
-  pointBalance?: number
-): PointTranslation[] {
-  const thresholds = translationThresholds[program];
+// Standard rewards catalog that applies across all programs
+// Points required will be adjusted based on the program's point value
+const standardRewards: PointTranslation[] = [
+  {
+    type: 'flight',
+    description: 'A domestic one-way flight',
+    pointsRequired: 12500,
+    cashValue: 250,
+  },
+  {
+    type: 'flight',
+    description: 'A return trip to Bali',
+    pointsRequired: 50000,
+    cashValue: 800,
+  },
+  {
+    type: 'hotel',
+    description: 'One night at a luxury hotel',
+    pointsRequired: 25000,
+    cashValue: 400,
+  },
+  {
+    type: 'hotel',
+    description: 'A weekend getaway (2 nights)',
+    pointsRequired: 40000,
+    cashValue: 600,
+  },
+  {
+    type: 'dining',
+    description: 'A fancy dinner for two',
+    pointsRequired: 10000,
+    cashValue: 150,
+  },
+  {
+    type: 'dining',
+    description: 'A free lunch',
+    pointsRequired: 2000,
+    cashValue: 30,
+  },
+  {
+    type: 'shopping',
+    description: 'A $100 shopping voucher',
+    pointsRequired: 5000,
+    cashValue: 100,
+  },
+  {
+    type: 'shopping',
+    description: 'A new premium smartphone',
+    pointsRequired: 60000,
+    cashValue: 1000,
+  },
+  {
+    type: 'experience',
+    description: 'Movie tickets for two',
+    pointsRequired: 2000,
+    cashValue: 40,
+  },
+  {
+    type: 'experience',
+    description: 'A hot air balloon ride',
+    pointsRequired: 20000,
+    cashValue: 350,
+  },
+];
+
+/**
+ * Get possible translations for the given points amount in a specific loyalty program
+ * @param points The number of points to translate
+ * @param program The loyalty program the points belong to
+ * @returns An array of reward translations that are achievable with the points
+ */
+export function translatePoints(points: number, program: LoyaltyProgram): PointTranslation[] {
+  if (points <= 0) return [];
   
-  if (!thresholds) {
-    return [];
-  }
+  // Get the value per point for this program
+  const pointValue = pointValueMap[program] || 0.01; // Default to $0.01 if program not found
   
-  // Update points values based on the program's thresholds
-  const updatedTranslations = Object.entries(translations).flatMap(([cat, items]) => {
-    return items.map(item => {
-      const newItem = { ...item };
-      
-      // Set points based on category
-      if (item.title === 'Domestic Flight') {
-        newItem.points = thresholds.flight;
-      } else if (item.title === 'Hotel Stay') {
-        newItem.points = thresholds.hotel;
-      } else if (item.title === 'Weekend Getaway') {
-        newItem.points = thresholds.hotel * 2.5;
-      } else if (item.title === 'Flight Upgrade') {
-        newItem.points = thresholds.flight * 1.8;
-      } else if (item.category === 'dining') {
-        newItem.points = thresholds.meal * (item.title === 'Fine Dining Experience' ? 2.5 : 
-                                           item.title === 'Coffee for a Month' ? 3 : 1);
-      } else if (item.category === 'shopping') {
-        newItem.points = thresholds.shopping * (item.title === 'Electronics' ? 2 : 
-                                               item.title === 'Fashion Item' ? 1.5 : 1);
-      } else if (item.category === 'entertainment') {
-        newItem.points = thresholds.entertainment * (item.title === 'Concert Tickets' ? 2.5 : 
-                                                    item.title === 'Streaming Subscription' ? 2 : 1);
-      } else if (item.category === 'services') {
-        newItem.points = thresholds.entertainment * (item.title === 'Spa Treatment' ? 1.8 : 
-                                                    item.title === 'Airport Lounge' ? 1.2 : 1.5);
-      }
-      
-      return newItem;
-    });
+  // Calculate the cash equivalent of the points
+  const cashEquivalent = points * pointValue;
+  
+  // Adjust standard rewards based on the program's point value
+  const programAdjustedRewards = standardRewards.map(reward => {
+    // Calculate how many points in this program would be needed for the cash value
+    const adjustedPointsRequired = Math.round(reward.cashValue / pointValue);
+    
+    return {
+      ...reward,
+      pointsRequired: adjustedPointsRequired,
+    };
   });
   
-  // Filter by category if specified
-  let result = category 
-    ? updatedTranslations.filter(item => item.category === category)
-    : updatedTranslations;
-    
-  // If point balance is provided, only return items the user can afford
-  if (pointBalance !== undefined) {
-    result = result.filter(item => item.points <= pointBalance);
+  // Filter rewards that are achievable with the points amount
+  return programAdjustedRewards
+    .filter(reward => reward.pointsRequired <= points)
+    .sort((a, b) => b.pointsRequired - a.pointsRequired); // Sort by highest points first
+}
+
+/**
+ * Get how many more points are needed to reach a specific reward
+ * @param points Current points balance
+ * @param reward The reward to check against
+ * @returns The number of additional points needed, or 0 if already achievable
+ */
+export function pointsNeededForReward(points: number, reward: PointTranslation): number {
+  if (points >= reward.pointsRequired) return 0;
+  return reward.pointsRequired - points;
+}
+
+/**
+ * Get custom point translations for specific use cases like the explorer page
+ * This allows for more tailored messaging and dynamic content
+ * @param points The number of points
+ * @param program The loyalty program
+ * @returns Custom translations for specific point ranges
+ */
+export function getCustomTranslation(points: number, program: LoyaltyProgram): string {
+  const pointValue = pointValueMap[program] || 0.01;
+  const cashValue = Math.round(points * pointValue);
+  
+  if (points < 1000) {
+    return `Your ${points} ${program} points are worth about $${cashValue} - maybe grab a coffee or snack.`;
+  } else if (points < 5000) {
+    return `With ${points} ${program} points (about $${cashValue}) you could get a nice meal or movie tickets.`;
+  } else if (points < 15000) {
+    return `Your ${points} ${program} points are valued around $${cashValue} - enough for a quality restaurant dinner for two.`;
+  } else if (points < 30000) {
+    return `Those ${points} ${program} points are worth approximately $${cashValue} - consider a weekend getaway or a nice shopping spree.`;
+  } else if (points < 60000) {
+    return `With ${points} ${program} points (valued at ~$${cashValue}), you could enjoy a domestic flight or a short vacation package.`;
+  } else {
+    return `Your impressive ${points} ${program} points balance is worth around $${cashValue} - enough for an international flight or luxury hotel stay.`;
   }
-    
-  // Sort by points required (ascending)
-  return result.sort((a, b) => a.points - b.points);
-}
-
-// Function to get a single translation at the closest threshold to the provided points
-export function getClosestTranslation(
-  program: LoyaltyProgram,
-  points: number
-): PointTranslation | null {
-  const translations = getPointTranslations(program);
-  
-  if (!translations.length) return null;
-  
-  // Find item with closest points value (either just below or just above)
-  return translations.reduce((closest, current) => {
-    // If we haven't found any translation yet, return the current one
-    if (!closest) return current;
-    
-    // Calculate the absolute differences
-    const closestDiff = Math.abs(closest.points - points);
-    const currentDiff = Math.abs(current.points - points);
-    
-    // Return the translation with the smallest difference
-    return currentDiff < closestDiff ? current : closest;
-  }, null as PointTranslation | null);
-}
-
-// Function to calculate how many more points are needed to reach a specific reward
-export function getPointsNeeded(
-  program: LoyaltyProgram, 
-  currentPoints: number, 
-  targetTranslation: PointTranslation
-): number {
-  return Math.max(0, targetTranslation.points - currentPoints);
-}
-
-// Function to get all rewards the user can afford with their point balance
-export function getAffordableRewards(
-  program: LoyaltyProgram,
-  pointBalance: number
-): PointTranslation[] {
-  return getPointTranslations(program)
-    .filter(translation => translation.points <= pointBalance)
-    .sort((a, b) => b.points - a.points); // Sort by most expensive first
-}
-
-// Function to suggest the best value redemption options
-export function getBestValueRedemptions(
-  program: LoyaltyProgram,
-  pointBalance: number
-): PointTranslation[] {
-  // Get all affordable rewards
-  const affordable = getAffordableRewards(program, pointBalance);
-  
-  // If there are less than 3 affordable rewards, return all of them
-  if (affordable.length <= 3) return affordable;
-  
-  // Otherwise, return the 3 highest-value rewards
-  return affordable.slice(0, 3);
 }

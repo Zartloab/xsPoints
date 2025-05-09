@@ -1,131 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Loader2, PlusCircle, Award, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { LoyaltyProgram } from '@shared/schema';
-import { getPointTranslations, PointTranslation, getBestValueRedemptions } from '@/lib/points-translator';
-import { Badge } from '@/components/ui/badge';
+import { translatePoints, type PointTranslation } from '@/lib/points-translator';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/use-auth';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Plane, Utensils, Hotel, ShoppingBag, Ticket, PiggyBank, ChevronRight } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+// Map reward types to icons
+const rewardIcons = {
+  'flight': <Plane className="h-4 w-4" />,
+  'dining': <Utensils className="h-4 w-4" />,
+  'hotel': <Hotel className="h-4 w-4" />,
+  'shopping': <ShoppingBag className="h-4 w-4" />,
+  'experience': <Ticket className="h-4 w-4" />,
+};
 
 interface MobilePointsTranslatorProps {
+  className?: string;
   selectedProgram?: LoyaltyProgram;
   pointsBalance?: number;
 }
 
-const MobilePointsTranslator: React.FC<MobilePointsTranslatorProps> = ({ 
-  selectedProgram: propSelectedProgram,
-  pointsBalance: propPointsBalance
-}) => {
-  // State for selected loyalty program and category
-  const [selectedProgram, setSelectedProgram] = useState<LoyaltyProgram>(propSelectedProgram || 'XPOINTS');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+export default function MobilePointsTranslator({ 
+  className = '', 
+  selectedProgram = 'XPOINTS',
+  pointsBalance = 10000 
+}: MobilePointsTranslatorProps) {
+  const [activeCategory, setActiveCategory] = useState<'all' | 'flight' | 'hotel' | 'dining' | 'shopping' | 'experience'>('all');
   
-  // Update selectedProgram if prop changes
-  useEffect(() => {
-    if (propSelectedProgram) {
-      setSelectedProgram(propSelectedProgram);
-    }
-  }, [propSelectedProgram]);
+  // Convert the points to reward options
+  const translations = useMemo(() => {
+    return translatePoints(pointsBalance, selectedProgram);
+  }, [pointsBalance, selectedProgram]);
   
-  // Get user wallets to show available points
-  const { user } = useAuth();
-  const { data: wallets, isLoading: walletsLoading } = useQuery<Array<{
-    id: number;
-    userId: number;
-    program: string;
-    balance: number;
-    accountNumber: string | null;
-    accountName: string | null;
-    createdAt: Date;
-  }>>({
-    queryKey: ['/api/wallets'],
-    enabled: !!user,
-  });
+  // Get translations filtered by the selected category
+  const filteredTranslations = useMemo(() => {
+    if (activeCategory === 'all') return translations;
+    return translations.filter(reward => reward.type === activeCategory);
+  }, [translations, activeCategory]);
   
-  // Get the current balance for the selected program
-  const userWallet = wallets?.find(wallet => wallet.program === selectedProgram);
-  const pointsBalance = propPointsBalance !== undefined ? propPointsBalance : userWallet?.balance || 0;
+  // Get the estimated cash value of the points
+  const estimatedCashValue = useMemo(() => {
+    if (translations.length === 0) return 0;
+    
+    // We can estimate this based on the highest value reward's cash value ratio
+    const bestValuedReward = translations[0]; // Already sorted by highest value
+    return bestValuedReward ? Math.round(pointsBalance * (bestValuedReward.cashValue / bestValuedReward.pointsRequired)) : 0;
+  }, [translations, pointsBalance]);
   
-  // Get all translations for the selected program
-  const translations = getPointTranslations(selectedProgram);
+  // Get rewards that require more points than the current balance
+  const upcomingRewards = useMemo(() => {
+    const highestPointsInBalance = translations.length > 0 ? translations[0].pointsRequired : 0;
+    const targetPoints = highestPointsInBalance * 2;
+    
+    const upcomingByType: Record<string, PointTranslation> = {};
+    const allRewards = translatePoints(targetPoints, selectedProgram);
+    
+    allRewards.forEach(reward => {
+      if (reward.pointsRequired <= pointsBalance) return;
+      
+      if (!upcomingByType[reward.type]) {
+        upcomingByType[reward.type] = reward;
+      }
+    });
+    
+    return Object.values(upcomingByType).sort((a, b) => a.pointsRequired - b.pointsRequired);
+  }, [pointsBalance, selectedProgram, translations]);
   
-  // Get the best value redemptions
-  const bestValueRedemptions = getBestValueRedemptions(selectedProgram, pointsBalance);
-  
-  // Filter translations by selected category
-  const filteredTranslations = selectedCategory 
-    ? translations.filter(item => item.category === selectedCategory) 
-    : translations;
-  
-  // List of available categories
-  const categories = [
-    { id: 'travel', name: 'Travel', icon: '✈️' },
-    { id: 'dining', name: 'Dining', icon: '🍽️' },
-    { id: 'shopping', name: 'Shopping', icon: '🛍️' },
-    { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
-    { id: 'services', name: 'Services', icon: '🔧' },
-  ];
-  
-  // Programs for the dropdown
-  const programs: LoyaltyProgram[] = [
-    'QANTAS', 'GYG', 'XPOINTS', 'VELOCITY', 'AMEX', 
-    'FLYBUYS', 'HILTON', 'MARRIOTT', 'AIRBNB', 'DELTA'
-  ];
-  
-  const handleProgramChange = (value: string) => {
-    setSelectedProgram(value as LoyaltyProgram);
+  // Calculate percentage progress towards rewards
+  const getProgressPercentage = (requiredPoints: number) => {
+    if (requiredPoints <= 0) return 0;
+    const percentage = (pointsBalance / requiredPoints) * 100;
+    return Math.min(percentage, 100);
   };
-  
-  const handleCategorySelect = (category: string | null) => {
-    setSelectedCategory(category);
-  };
-  
-  // Render a single reward card
+
   const renderRewardCard = (reward: PointTranslation) => {
-    const canAfford = pointsBalance >= reward.points;
+    const icon = rewardIcons[reward.type] || <PiggyBank className="h-4 w-4" />;
     
     return (
-      <Card key={reward.title} className={`mb-3 border ${canAfford ? 'border-green-200' : 'border-gray-200'}`}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">{reward.icon}</div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-sm">{reward.title}</h3>
-                <Badge variant={canAfford ? 'outline' : 'secondary'} className={`ml-1 ${canAfford ? 'bg-green-50 text-green-700 border-green-200' : ''}`}>
-                  {reward.points.toLocaleString()}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">{reward.description}</p>
-              
-              {!canAfford && (
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{Math.round((pointsBalance / reward.points) * 100)}%</span>
-                  </div>
-                  <Progress 
-                    value={(pointsBalance / reward.points) * 100} 
-                    className="h-2"
-                  />
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Need {(reward.points - pointsBalance).toLocaleString()} more
-                  </div>
-                </div>
-              )}
-              
-              {canAfford && (
-                <div className="flex items-center mt-2 text-green-600 text-xs font-medium">
-                  <Award className="h-3 w-3 mr-1" />
-                  <span>You can redeem this!</span>
-                </div>
-              )}
+      <Card key={`${reward.type}-${reward.description}`} className="mb-3">
+        <CardHeader className="pb-2 px-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              {icon}
+              <span>{reward.description}</span>
+            </CardTitle>
+            <div className="text-sm font-medium">
+              ${reward.cashValue.toLocaleString()}
             </div>
+          </div>
+          <CardDescription className="text-xs">
+            {reward.pointsRequired.toLocaleString()} points
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-2 px-3 pt-0">
+          <div className="text-xs text-muted-foreground">
+            ${(reward.cashValue / reward.pointsRequired).toFixed(3)} per point
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+  
+  const renderUpcomingRewardCard = (reward: PointTranslation) => {
+    const icon = rewardIcons[reward.type] || <PiggyBank className="h-4 w-4" />;
+    const pointsNeeded = reward.pointsRequired - pointsBalance;
+    const progress = getProgressPercentage(reward.pointsRequired);
+    
+    return (
+      <Card key={`upcoming-${reward.type}-${reward.description}`} className="mb-3">
+        <CardHeader className="pb-1 px-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              {icon}
+              <span>{reward.description}</span>
+            </CardTitle>
+            <div className="text-xs font-medium">
+              ${reward.cashValue.toLocaleString()}
+            </div>
+          </div>
+          <CardDescription className="text-xs">
+            {reward.pointsRequired.toLocaleString()} points required
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-3 px-3 pt-0">
+          <div className="text-xs text-muted-foreground mb-1">
+            Need {pointsNeeded.toLocaleString()} more points
+          </div>
+          <Progress value={progress} className="h-1.5" />
+          <div className="text-xs text-muted-foreground mt-1">
+            {progress.toFixed(0)}% there
           </div>
         </CardContent>
       </Card>
@@ -133,93 +139,134 @@ const MobilePointsTranslator: React.FC<MobilePointsTranslatorProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Points Translator</h2>
-        
-        <Select value={selectedProgram} onValueChange={handleProgramChange}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="Program" />
-          </SelectTrigger>
-          <SelectContent>
-            {programs.map((program) => (
-              <SelectItem key={program} value={program}>{program}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className={`bg-white rounded-lg ${className}`}>
+      <div className="p-3 border-b">
+        <h3 className="text-base font-medium">Points Translator</h3>
+        <p className="text-xs text-muted-foreground">
+          See what your {pointsBalance.toLocaleString()} {selectedProgram} points are worth
+        </p>
       </div>
       
-      <div className="bg-muted/30 p-4 rounded-md">
-        <p className="text-sm text-muted-foreground mb-1">Your balance</p>
-        <div className="text-2xl font-bold">{pointsBalance.toLocaleString()} points</div>
-      </div>
-      
-      {walletsLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="p-3">
+        <div className="mb-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Estimated value</span>
+            <span className="text-xl font-bold">${estimatedCashValue.toLocaleString()}</span>
+          </div>
         </div>
-      ) : (
-        <Tabs defaultValue="recommendations">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-            <TabsTrigger value="all">All Options</TabsTrigger>
+        
+        <Tabs defaultValue="all" value={activeCategory} onValueChange={(value) => setActiveCategory(value as any)}>
+          <TabsList className="grid grid-cols-3 mb-3">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="flight">Travel</TabsTrigger>
+            <TabsTrigger value="dining">Lifestyle</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="recommendations" className="mt-4">
-            {bestValueRedemptions.length > 0 ? (
-              <div className="space-y-1">
-                {bestValueRedemptions.map(renderRewardCard)}
-              </div>
+          <TabsContent value="all">
+            {filteredTranslations.length > 0 ? (
+              <>
+                <h4 className="text-xs font-medium mb-2">What you can get with your points:</h4>
+                <div className="max-h-[320px] overflow-y-auto pr-1 -mr-1">
+                  {filteredTranslations.map(renderRewardCard)}
+                </div>
+              </>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <PlusCircle className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p>Earn more points to unlock redemption options</p>
-                <Button className="mt-3" variant="outline">Earn Points</Button>
+              <div className="text-center py-6">
+                <p className="text-xs text-muted-foreground">
+                  You need more points to access rewards. Keep earning!
+                </p>
               </div>
             )}
           </TabsContent>
           
-          <TabsContent value="all" className="mt-4">
-            <ScrollArea className="whitespace-nowrap pb-2 mb-4">
-              <div className="flex gap-2">
-                <Button 
-                  variant={selectedCategory === null ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => handleCategorySelect(null)}
-                >
-                  All
-                </Button>
-                
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleCategorySelect(category.id)}
-                    className="flex items-center gap-1"
-                  >
-                    <span>{category.icon}</span>
-                    <span>{category.name}</span>
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-            
-            <div className="space-y-1">
-              {filteredTranslations.map(renderRewardCard)}
-            </div>
+          <TabsContent value="flight">
+            <Accordion type="single" collapsible className="mb-2">
+              <AccordionItem value="flights">
+                <AccordionTrigger className="py-2 text-xs">Flights</AccordionTrigger>
+                <AccordionContent>
+                  {translations.filter(r => r.type === 'flight').length > 0 ? (
+                    translations.filter(r => r.type === 'flight').map(renderRewardCard)
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Need more points for flight rewards
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="hotels">
+                <AccordionTrigger className="py-2 text-xs">Hotels</AccordionTrigger>
+                <AccordionContent>
+                  {translations.filter(r => r.type === 'hotel').length > 0 ? (
+                    translations.filter(r => r.type === 'hotel').map(renderRewardCard)
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Need more points for hotel rewards
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+          
+          <TabsContent value="dining">
+            <Accordion type="single" collapsible className="mb-2">
+              <AccordionItem value="dining">
+                <AccordionTrigger className="py-2 text-xs">Dining</AccordionTrigger>
+                <AccordionContent>
+                  {translations.filter(r => r.type === 'dining').length > 0 ? (
+                    translations.filter(r => r.type === 'dining').map(renderRewardCard)
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Need more points for dining rewards
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="shopping">
+                <AccordionTrigger className="py-2 text-xs">Shopping</AccordionTrigger>
+                <AccordionContent>
+                  {translations.filter(r => r.type === 'shopping').length > 0 ? (
+                    translations.filter(r => r.type === 'shopping').map(renderRewardCard)
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Need more points for shopping rewards
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="experiences">
+                <AccordionTrigger className="py-2 text-xs">Experiences</AccordionTrigger>
+                <AccordionContent>
+                  {translations.filter(r => r.type === 'experience').length > 0 ? (
+                    translations.filter(r => r.type === 'experience').map(renderRewardCard)
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Need more points for experience rewards
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
         </Tabs>
-      )}
+        
+        {upcomingRewards.length > 0 && (
+          <div className="mt-3">
+            <h4 className="text-xs font-medium mb-2">Almost there! Keep earning for:</h4>
+            {upcomingRewards.slice(0, 2).map(renderUpcomingRewardCard)}
+          </div>
+        )}
+      </div>
       
-      <div className="flex justify-center mt-6">
-        <Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">
-          View detailed redemption guide
+      <CardFooter className="bg-slate-50 p-3 flex justify-between border-t">
+        <Button variant="ghost" size="sm" className="text-xs px-2 py-1 h-auto">
+          How it works
+        </Button>
+        <Button variant="outline" size="sm" className="text-xs flex items-center gap-1 px-2 py-1 h-auto">
+          <span>All rewards</span>
           <ChevronRight className="h-3 w-3" />
         </Button>
-      </div>
+      </CardFooter>
     </div>
   );
-};
-
-export default MobilePointsTranslator;
+}

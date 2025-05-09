@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowUpDown, Wallet, TrendingUp, AreaChart, 
-  BookOpen, BarChart4, Award, FileText 
+  BookOpen, BarChart4, Award, FileText, Lightbulb
 } from 'lucide-react';
 import MobileMembershipTier from './MobileMembershipTier';
 import MobileTierComparisonModal from './MobileTierComparisonModal';
+import MobilePointsTranslator from './MobilePointsTranslator';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 
 const FeatureCard = ({ 
   icon: Icon, 
@@ -54,6 +56,19 @@ const MobileHomePage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tierModalOpen, setTierModalOpen] = useState(false);
+  const [showPointsTranslator, setShowPointsTranslator] = useState(false);
+  
+  // Fetch user wallets for the points translator
+  const { data: wallets } = useQuery({
+    queryKey: ['/api/wallets'],
+    enabled: !!user,
+  });
+  
+  // Get the highest balance wallet for the Points Translator
+  const primaryWallet = wallets?.length ? 
+    wallets.reduce((highest: any, current: any) => 
+      current.balance > highest.balance ? current : highest
+    ) : null;
 
   return (
     <div className="pb-4 px-4">
@@ -125,6 +140,47 @@ const MobileHomePage: React.FC = () => {
           />
         </div>
       </section>
+      
+      {/* Points Translator Section */}
+      {primaryWallet && (
+        <section className="mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold">Points Translator</h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-auto p-1"
+              onClick={() => setShowPointsTranslator(!showPointsTranslator)}
+            >
+              {showPointsTranslator ? 'Hide' : 'Show'}
+            </Button>
+          </div>
+          
+          {!showPointsTranslator ? (
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-none overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-full bg-blue-100 text-blue-500">
+                      <Lightbulb size={16} />
+                    </div>
+                    <div className="text-sm font-medium">What can your points get you?</div>
+                  </div>
+                  <div className="text-sm font-semibold">${Math.round(primaryWallet.balance * 0.02)}</div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Click to see what your {primaryWallet.balance.toLocaleString()} {primaryWallet.program} points are worth in the real world
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <MobilePointsTranslator 
+              selectedProgram={primaryWallet.program as any} 
+              pointsBalance={primaryWallet.balance} 
+            />
+          )}
+        </section>
+      )}
 
       {/* Membership */}
       <section className="mb-6">

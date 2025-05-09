@@ -9,10 +9,24 @@ import TransactionHistory from '@/components/transaction/TransactionHistory';
 import LinkAccountForm from '@/components/account/LinkAccountForm';
 import ConnectedAccounts from '@/components/account/ConnectedAccounts';
 import MobileHomePage from '@/components/mobile/MobileHomePage';
+import PointsTranslator from '@/components/PointsTranslator';
+import { useQuery } from '@tanstack/react-query';
 
 export default function HomePage() {
   const { user } = useAuth();
   const { useMobileLayout } = usePreferredLayout();
+  
+  // Fetch user wallets for the points translator
+  const { data: wallets } = useQuery({
+    queryKey: ['/api/wallets'],
+    enabled: !!user,
+  });
+  
+  // Get the highest balance wallet for the Points Translator
+  const primaryWallet = wallets?.length ? 
+    wallets.reduce((highest, current) => 
+      current.balance > highest.balance ? current : highest
+    ) : null;
 
   // Use mobile-optimized layout on mobile devices
   if (useMobileLayout) {
@@ -28,7 +42,19 @@ export default function HomePage() {
         <MembershipTierCard />
       </div>
       
-      <ConversionForm />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <ConversionForm />
+        </div>
+        <div>
+          {primaryWallet && (
+            <PointsTranslator 
+              selectedProgram={primaryWallet.program as any} 
+              pointsBalance={primaryWallet.balance} 
+            />
+          )}
+        </div>
+      </div>
       
       <TransactionHistory />
       
