@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Plane, Utensils, Hotel, ShoppingBag, Ticket, PiggyBank, ChevronRight } from 'lucide-react';
+import { Plane, Utensils, Hotel, ShoppingBag, Ticket, PiggyBank, ChevronRight, Trophy, Gamepad2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // Map reward types to icons
@@ -28,7 +28,7 @@ export default function MobilePointsTranslator({
   selectedProgram = 'XPOINTS',
   pointsBalance = 10000 
 }: MobilePointsTranslatorProps) {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'flight' | 'hotel' | 'dining' | 'shopping' | 'experience'>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'flight' | 'hotel' | 'dining' | 'shopping' | 'experience' | 'gamification'>('all');
   
   // Convert the points to reward options
   const translations = useMemo(() => {
@@ -156,10 +156,13 @@ export default function MobilePointsTranslator({
         </div>
         
         <Tabs defaultValue="all" value={activeCategory} onValueChange={(value) => setActiveCategory(value as any)}>
-          <TabsList className="grid grid-cols-3 mb-3">
+          <TabsList className="grid grid-cols-4 mb-3">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="flight">Travel</TabsTrigger>
             <TabsTrigger value="dining">Lifestyle</TabsTrigger>
+            <TabsTrigger value="gamification">
+              <Trophy className="h-3 w-3" />
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="all">
@@ -247,6 +250,94 @@ export default function MobilePointsTranslator({
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+          </TabsContent>
+          
+          <TabsContent value="gamification">
+            <h4 className="text-xs font-medium mb-2">Fun ways to earn more xPoints:</h4>
+            <div className="space-y-3">
+              {/* Daily Check-in Card */}
+              <Card className="overflow-hidden border-green-100 bg-green-50">
+                <CardHeader className="pb-1 px-3 flex flex-row items-center gap-2">
+                  <div className="p-1.5 rounded-full bg-green-100 text-green-600">
+                    <Trophy className="h-3 w-3" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xs">Daily Check-in Streak</CardTitle>
+                    <CardDescription className="text-xs">Log in every day</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-3 px-3 pt-1">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Daily: <span className="font-semibold">50 pts</span></span>
+                      <span>5-day streak: <span className="font-semibold">+100</span></span>
+                    </div>
+                    <Progress value={40} className="h-1.5" />
+                    <div className="text-xs text-muted-foreground">Current streak: 2 days</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Challenge Missions Card */}
+              <Card className="overflow-hidden border-purple-100 bg-purple-50">
+                <CardHeader className="pb-1 px-3 flex flex-row items-center gap-2">
+                  <div className="p-1.5 rounded-full bg-purple-100 text-purple-600">
+                    <Gamepad2 className="h-3 w-3" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xs">Challenge Missions</CardTitle>
+                    <CardDescription className="text-xs">Complete tasks for bonuses</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-3 px-3 pt-1">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs">Link 3 accounts <span className="text-green-600 font-medium">(2/3)</span></div>
+                      <div className="font-semibold text-xs">500 pts</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs">First conversion</div>
+                      <div className="font-semibold text-xs">250 pts</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs">Refer a friend</div>
+                      <div className="font-semibold text-xs">1,000 pts</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Exchange Boost Events Card */}
+              <Card className="overflow-hidden border-blue-100 bg-blue-50">
+                <CardHeader className="pb-1 px-3 flex flex-row items-center gap-2">
+                  <div className="p-1.5 rounded-full bg-blue-100 text-blue-600">
+                    <PiggyBank className="h-3 w-3" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xs">Boost Events</CardTitle>
+                    <CardDescription className="text-xs">Limited-time bonuses</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-3 px-3 pt-1">
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-xs font-medium">Happy Hour Friday</div>
+                        <div className="text-xs text-muted-foreground">Every Friday, 5-7 PM</div>
+                      </div>
+                      <div className="text-xs font-semibold">+15%</div>
+                    </div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-xs font-medium">Double Points Weekend</div>
+                        <div className="text-xs text-muted-foreground">First weekend/month</div>
+                      </div>
+                      <div className="text-xs font-semibold">+100%</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
         
