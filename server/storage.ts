@@ -2,7 +2,8 @@ import * as schema from "@shared/schema";
 import { 
   type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
-  type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData
+  type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData,
+  type TradeOffer, type TradeTransaction
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -44,6 +45,15 @@ export interface IStorage {
   getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined>;
   createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit>;
   initializeTierBenefits(): Promise<void>;
+  
+  // Trading operations
+  getTradeOffers(excludeUserId?: number): Promise<TradeOffer[]>;
+  getUserTradeOffers(userId: number): Promise<TradeOffer[]>;
+  getTradeOffer(id: number): Promise<TradeOffer | undefined>;
+  createTradeOffer(data: Omit<TradeOffer, "id" | "createdAt" | "status">): Promise<TradeOffer>;
+  updateTradeOfferStatus(id: number, status: string): Promise<TradeOffer | undefined>;
+  getTradeHistory(userId: number): Promise<TradeTransaction[]>;
+  createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction>;
   
   // Business analytics operations
   getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined>;
@@ -737,6 +747,81 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.businessPrograms.id, businessProgramId));
     
     return program ? program.businessId : null;
+  }
+  
+  // Trading operations implementation
+  async getTradeOffers(excludeUserId?: number): Promise<TradeOffer[]> {
+    let query = db
+      .select()
+      .from(schema.tradeOffers)
+      .where(eq(schema.tradeOffers.status, "open"));
+    
+    if (excludeUserId) {
+      query = query.where(ne(schema.tradeOffers.createdBy, excludeUserId));
+    }
+    
+    return query.orderBy(desc(schema.tradeOffers.createdAt));
+  }
+  
+  async getUserTradeOffers(userId: number): Promise<TradeOffer[]> {
+    return db
+      .select()
+      .from(schema.tradeOffers)
+      .where(eq(schema.tradeOffers.createdBy, userId))
+      .orderBy(desc(schema.tradeOffers.createdAt));
+  }
+  
+  async getTradeOffer(id: number): Promise<TradeOffer | undefined> {
+    const [offer] = await db
+      .select()
+      .from(schema.tradeOffers)
+      .where(eq(schema.tradeOffers.id, id));
+    
+    return offer;
+  }
+  
+  async createTradeOffer(data: Omit<TradeOffer, "id" | "createdAt" | "status">): Promise<TradeOffer> {
+    const [tradeOffer] = await db
+      .insert(schema.tradeOffers)
+      .values({
+        ...data,
+        status: "open"
+      })
+      .returning();
+    
+    return tradeOffer;
+  }
+  
+  async updateTradeOfferStatus(id: number, status: string): Promise<TradeOffer | undefined> {
+    const [updatedOffer] = await db
+      .update(schema.tradeOffers)
+      .set({ status })
+      .where(eq(schema.tradeOffers.id, id))
+      .returning();
+    
+    return updatedOffer;
+  }
+  
+  async getTradeHistory(userId: number): Promise<TradeTransaction[]> {
+    return db
+      .select()
+      .from(schema.tradeTransactions)
+      .where(
+        or(
+          eq(schema.tradeTransactions.buyerId, userId),
+          eq(schema.tradeTransactions.sellerId, userId)
+        )
+      )
+      .orderBy(desc(schema.tradeTransactions.completedAt));
+  }
+  
+  async createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction> {
+    const [transaction] = await db
+      .insert(schema.tradeTransactions)
+      .values(data)
+      .returning();
+    
+    return transaction;
   }
 }
 
