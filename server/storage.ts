@@ -82,6 +82,7 @@ export class DatabaseStorage implements IStorage {
       if (existingRates.length === 0) {
         // Initial rates to set up
         const initialRates = [
+          // QANTAS to other programs
           {
             fromProgram: 'QANTAS' as LoyaltyProgram,
             toProgram: 'XPOINTS' as LoyaltyProgram,
@@ -89,15 +90,16 @@ export class DatabaseStorage implements IStorage {
             lastUpdated: new Date(),
           },
           {
+            fromProgram: 'QANTAS' as LoyaltyProgram,
+            toProgram: 'GYG' as LoyaltyProgram,
+            rate: "0.625", // 0.5 * 1.25 (QANTAS→XPOINTS→GYG)
+            lastUpdated: new Date(),
+          },
+          // XPOINTS to other programs
+          {
             fromProgram: 'XPOINTS' as LoyaltyProgram,
             toProgram: 'QANTAS' as LoyaltyProgram,
             rate: "1.8",
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'GYG' as LoyaltyProgram,
-            toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: "0.8",
             lastUpdated: new Date(),
           },
           {
@@ -105,11 +107,84 @@ export class DatabaseStorage implements IStorage {
             toProgram: 'GYG' as LoyaltyProgram,
             rate: "1.25",
             lastUpdated: new Date(),
+          },
+          // GYG to other programs
+          {
+            fromProgram: 'GYG' as LoyaltyProgram,
+            toProgram: 'XPOINTS' as LoyaltyProgram,
+            rate: "0.8",
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'GYG' as LoyaltyProgram,
+            toProgram: 'QANTAS' as LoyaltyProgram,
+            rate: "1.44", // 0.8 * 1.8 (GYG→XPOINTS→QANTAS)
+            lastUpdated: new Date(),
+          },
+          // Self-referential rates (for completeness)
+          {
+            fromProgram: 'QANTAS' as LoyaltyProgram,
+            toProgram: 'QANTAS' as LoyaltyProgram,
+            rate: "1.0",
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'XPOINTS' as LoyaltyProgram,
+            toProgram: 'XPOINTS' as LoyaltyProgram,
+            rate: "1.0",
+            lastUpdated: new Date(),
+          },
+          {
+            fromProgram: 'GYG' as LoyaltyProgram,
+            toProgram: 'GYG' as LoyaltyProgram,
+            rate: "1.0",
+            lastUpdated: new Date(),
           }
         ];
         
         // Insert initial exchange rates
         await db.insert(schema.exchangeRates).values(initialRates);
+      } else {
+        // Check if we have all the necessary rates (9 combinations total)
+        const requiredCombinations = [
+          { from: 'QANTAS', to: 'XPOINTS' },
+          { from: 'QANTAS', to: 'GYG' },
+          { from: 'QANTAS', to: 'QANTAS' },
+          { from: 'XPOINTS', to: 'QANTAS' },
+          { from: 'XPOINTS', to: 'GYG' },
+          { from: 'XPOINTS', to: 'XPOINTS' },
+          { from: 'GYG', to: 'QANTAS' },
+          { from: 'GYG', to: 'XPOINTS' },
+          { from: 'GYG', to: 'GYG' }
+        ];
+        
+        // Check which combinations are missing
+        for (const combo of requiredCombinations) {
+          const exists = existingRates.some(
+            rate => rate.fromProgram === combo.from && rate.toProgram === combo.to
+          );
+          
+          if (!exists) {
+            console.log(`Adding missing exchange rate: ${combo.from} to ${combo.to}`);
+            let rate = "1.0"; // Default for same program
+            
+            // Calculate rates for missing combinations
+            if (combo.from !== combo.to) {
+              if (combo.from === 'QANTAS' && combo.to === 'GYG') {
+                rate = "0.625"; // QANTAS→XPOINTS→GYG
+              } else if (combo.from === 'GYG' && combo.to === 'QANTAS') {
+                rate = "1.44"; // GYG→XPOINTS→QANTAS
+              }
+            }
+            
+            await db.insert(schema.exchangeRates).values({
+              fromProgram: combo.from as LoyaltyProgram,
+              toProgram: combo.to as LoyaltyProgram,
+              rate,
+              lastUpdated: new Date()
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error initializing exchange rates:", error);
