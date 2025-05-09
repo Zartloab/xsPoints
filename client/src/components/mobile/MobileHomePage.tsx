@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import {
   ArrowUpDown, Wallet, TrendingUp, AreaChart, 
   BookOpen, BarChart4, Award, FileText 
 } from 'lucide-react';
+import MobileMembershipTier from './MobileMembershipTier';
+import MobileTierComparisonModal from './MobileTierComparisonModal';
 import { motion } from 'framer-motion';
 
 const FeatureCard = ({ 
@@ -51,6 +53,7 @@ const FeatureCard = ({
 const MobileHomePage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [tierModalOpen, setTierModalOpen] = useState(false);
 
   return (
     <div className="pb-4 px-4">
@@ -123,25 +126,18 @@ const MobileHomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Account Status */}
+      {/* Membership */}
       <section className="mb-6">
-        <h2 className="text-lg font-semibold mb-3">Account Status</h2>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-muted-foreground">Membership Tier</p>
-                <div className="flex items-center gap-2">
-                  <Award className="text-yellow-500" size={18} />
-                  <p className="font-semibold">{user?.membershipTier || 'STANDARD'}</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => toast({ title: "Mobile Profile", description: "Mobile profile view is coming soon." })}>
-                View Profile
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <MobileMembershipTier onViewAllTiers={() => setTierModalOpen(true)} />
+        
+        {/* Modal for viewing all tiers */}
+        {user && (
+          <MobileTierComparisonModal 
+            open={tierModalOpen}
+            onOpenChange={setTierModalOpen}
+            currentTier={user.membershipTier || 'STANDARD'}
+          />
+        )}
       </section>
 
       {/* Activity Feed (Placeholder) */}
