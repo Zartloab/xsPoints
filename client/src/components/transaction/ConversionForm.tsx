@@ -9,37 +9,39 @@ import ProgramIcon from '../loyaltyprograms/ProgramIcon';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
+// Helper function to get display name for loyalty programs
+const getDisplayProgramName = (program: string): string => {
+  switch (program) {
+    case 'QANTAS':
+      return 'Qantas';
+    case 'GYG':
+      return 'GYG';
+    case 'XPOINTS':
+      return 'xPoints';
+    case 'VELOCITY':
+      return 'Velocity';
+    case 'AMEX':
+      return 'American Express';
+    case 'FLYBUYS':
+      return 'Flybuys';
+    case 'HILTON':
+      return 'Hilton';
+    case 'MARRIOTT':
+      return 'Marriott';
+    case 'AIRBNB':
+      return 'Airbnb';
+    case 'DELTA':
+      return 'Delta';
+    default:
+      return program;
+  }
+};
+
 export default function ConversionForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Function to get proper program name display
-  const getProgramName = (program: string): string => {
-    switch (program) {
-      case 'QANTAS':
-        return 'Qantas';
-      case 'GYG':
-        return 'GYG';
-      case 'XPOINTS':
-        return 'xPoints';
-      case 'VELOCITY':
-        return 'Velocity';
-      case 'AMEX':
-        return 'American Express';
-      case 'FLYBUYS':
-        return 'Flybuys';
-      case 'HILTON':
-        return 'Hilton';
-      case 'MARRIOTT':
-        return 'Marriott';
-      case 'AIRBNB':
-        return 'Airbnb';
-      case 'DELTA':
-        return 'Delta';
-      default:
-        return program;
-    }
-  };
+
   
   // State for form
   const [fromProgram, setFromProgram] = useState<string>("QANTAS");
@@ -92,7 +94,39 @@ export default function ConversionForm() {
     onSuccess: (data) => {
       toast({
         title: "Conversion successful",
-        description: `Successfully converted ${amount} ${fromProgram} to ${calculatedAmount} ${toProgram}`,
+        description: `Successfully converted ${amount} ${
+          (() => {
+            switch (fromProgram) {
+              case 'QANTAS': return 'Qantas';
+              case 'GYG': return 'GYG';
+              case 'XPOINTS': return 'xPoints';
+              case 'VELOCITY': return 'Velocity';
+              case 'AMEX': return 'American Express';
+              case 'FLYBUYS': return 'Flybuys';
+              case 'HILTON': return 'Hilton';
+              case 'MARRIOTT': return 'Marriott';
+              case 'AIRBNB': return 'Airbnb';
+              case 'DELTA': return 'Delta';
+              default: return fromProgram;
+            }
+          })()
+        } points to ${calculatedAmount} ${
+          (() => {
+            switch (toProgram) {
+              case 'QANTAS': return 'Qantas';
+              case 'GYG': return 'GYG';
+              case 'XPOINTS': return 'xPoints';
+              case 'VELOCITY': return 'Velocity';
+              case 'AMEX': return 'American Express';
+              case 'FLYBUYS': return 'Flybuys';
+              case 'HILTON': return 'Hilton';
+              case 'MARRIOTT': return 'Marriott';
+              case 'AIRBNB': return 'Airbnb';
+              case 'DELTA': return 'Delta';
+              default: return toProgram;
+            }
+          })()
+        } points`,
       });
       // Invalidate cache to refresh wallet balances
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
@@ -180,7 +214,23 @@ export default function ConversionForm() {
     if (!sourceWallet || sourceWallet.balance < amount) {
       toast({
         title: "Insufficient balance",
-        description: `You don't have enough ${fromProgram} points for this conversion`,
+        description: `You don't have enough ${
+          (() => {
+            switch (fromProgram) {
+              case 'QANTAS': return 'Qantas';
+              case 'GYG': return 'GYG';
+              case 'XPOINTS': return 'xPoints';
+              case 'VELOCITY': return 'Velocity';
+              case 'AMEX': return 'American Express';
+              case 'FLYBUYS': return 'Flybuys';
+              case 'HILTON': return 'Hilton';
+              case 'MARRIOTT': return 'Marriott';
+              case 'AIRBNB': return 'Airbnb';
+              case 'DELTA': return 'Delta';
+              default: return fromProgram;
+            }
+          })()
+        } points for this conversion`,
         variant: "destructive",
       });
       return;
@@ -362,7 +412,23 @@ export default function ConversionForm() {
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Amount</span>
               <span className="text-sm font-medium">
-                {amount.toLocaleString()} {fromProgram === 'QANTAS' ? 'Qantas' : fromProgram === 'GYG' ? 'GYG' : 'xPoints'} Points
+                {amount.toLocaleString()} {
+                  (() => {
+                    switch (fromProgram) {
+                      case 'QANTAS': return 'Qantas';
+                      case 'GYG': return 'GYG';
+                      case 'XPOINTS': return 'xPoints';
+                      case 'VELOCITY': return 'Velocity';
+                      case 'AMEX': return 'American Express';
+                      case 'FLYBUYS': return 'Flybuys';
+                      case 'HILTON': return 'Hilton';
+                      case 'MARRIOTT': return 'Marriott';
+                      case 'AIRBNB': return 'Airbnb';
+                      case 'DELTA': return 'Delta';
+                      default: return fromProgram;
+                    }
+                  })()
+                } Points
               </span>
             </div>
             <div className="flex justify-between mb-2">
@@ -374,7 +440,23 @@ export default function ConversionForm() {
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Conversion Fee</span>
               <span className="text-sm font-medium">
-                {conversionFee.toLocaleString()} {fromProgram} Points ({feePercentage})
+                {conversionFee.toLocaleString()} {
+                  (() => {
+                    switch (fromProgram) {
+                      case 'QANTAS': return 'Qantas';
+                      case 'GYG': return 'GYG';
+                      case 'XPOINTS': return 'xPoints';
+                      case 'VELOCITY': return 'Velocity';
+                      case 'AMEX': return 'American Express';
+                      case 'FLYBUYS': return 'Flybuys';
+                      case 'HILTON': return 'Hilton';
+                      case 'MARRIOTT': return 'Marriott';
+                      case 'AIRBNB': return 'Airbnb';
+                      case 'DELTA': return 'Delta';
+                      default: return fromProgram;
+                    }
+                  })()
+                } Points ({feePercentage})
                 {conversionFee > 0 && (
                   <span className="ml-1 text-xs text-gray-500">
                     (Free up to {FREE_CONVERSION_LIMIT.toLocaleString()} points)
@@ -385,7 +467,23 @@ export default function ConversionForm() {
             <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
               <span className="text-sm font-medium text-gray-700">You'll receive</span>
               <span className="text-sm font-bold text-primary-600">
-                {calculatedAmount.toLocaleString()} {toProgram === 'QANTAS' ? 'Qantas' : toProgram === 'GYG' ? 'GYG' : 'xPoints'} Points
+                {calculatedAmount.toLocaleString()} {
+                  (() => {
+                    switch (toProgram) {
+                      case 'QANTAS': return 'Qantas';
+                      case 'GYG': return 'GYG';
+                      case 'XPOINTS': return 'xPoints';
+                      case 'VELOCITY': return 'Velocity';
+                      case 'AMEX': return 'American Express';
+                      case 'FLYBUYS': return 'Flybuys';
+                      case 'HILTON': return 'Hilton';
+                      case 'MARRIOTT': return 'Marriott';
+                      case 'AIRBNB': return 'Airbnb';
+                      case 'DELTA': return 'Delta';
+                      default: return toProgram;
+                    }
+                  })()
+                } Points
               </span>
             </div>
           </div>
