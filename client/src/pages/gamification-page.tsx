@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, Gamepad2, PiggyBank, ShoppingBag, Gift, Calendar, Medal, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import MobileGamificationPage from '@/components/mobile/MobileGamificationPage';
 
 export default function GamificationPage() {
   const { user } = useAuth();
@@ -97,6 +98,11 @@ export default function GamificationPage() {
         </div>
       </div>
     );
+  }
+  
+  // Render mobile version on mobile devices
+  if (isMobile) {
+    return <MobileGamificationPage />;
   }
   
   return (

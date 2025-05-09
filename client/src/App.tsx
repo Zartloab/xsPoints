@@ -14,6 +14,7 @@ import MerchantPage from "@/pages/merchant-page";
 import ExplorerPage from "@/pages/explorer-page";
 import TradingPage from "@/pages/trading-page";
 import TutorialPage from "@/pages/tutorial-page";
+import GamificationPage from "@/pages/gamification-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
@@ -31,6 +32,7 @@ function Router() {
       <ProtectedRoute path="/explorer" component={ExplorerPage} />
       <ProtectedRoute path="/trading" component={TradingPage} />
       <ProtectedRoute path="/tutorial" component={TutorialPage} />
+      <ProtectedRoute path="/earn" component={GamificationPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

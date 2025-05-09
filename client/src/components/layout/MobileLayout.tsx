@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Repeat, Wallet, User, BarChart3 } from 'lucide-react';
+import { Home, Repeat, Wallet, User, BarChart3, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MobileLayoutProps = {
@@ -14,7 +14,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     { icon: Home, label: 'Home', href: '/' },
     { icon: Repeat, label: 'Exchange', href: '/exchange' },
     { icon: BarChart3, label: 'Explorer', href: '/explorer' },
-    { icon: Wallet, label: 'Wallet', href: '/wallet' },
+    { icon: Trophy, label: 'Earn', href: '/earn' },
     { icon: User, label: 'Profile', href: '/profile' },
   ];
 
