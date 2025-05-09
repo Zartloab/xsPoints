@@ -37,14 +37,14 @@ export default function Header() {
           </div>
           
           <nav className="hidden md:flex space-x-6">
-            <Link href="/">
-              <span className={`${location === '/' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Dashboard</span>
+            <Link href="/dashboard">
+              <span className={`${location === '/dashboard' || location === '/' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Dashboard</span>
             </Link>
-            <Link href="/#convert">
-              <span className={`${location === '/#convert' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Convert</span>
+            <Link href="/convert">
+              <span className={`${location === '/convert' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Convert</span>
             </Link>
-            <Link href="/#history">
-              <span className={`${location === '/#history' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>History</span>
+            <Link href="/history">
+              <span className={`${location === '/history' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>History</span>
             </Link>
             <Link href="/tokenization">
               <span className={`${location === '/tokenization' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Tokenization</span>

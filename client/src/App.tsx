@@ -15,6 +15,9 @@ import ExplorerPage from "@/pages/explorer-page";
 import TradingPage from "@/pages/trading-page";
 import TutorialPage from "@/pages/tutorial-page";
 import GamificationPage from "@/pages/gamification-page";
+import DashboardPage from "@/pages/dashboard-page";
+import ConvertPage from "@/pages/convert-page";
+import HistoryPage from "@/pages/history-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
@@ -25,7 +28,7 @@ function Router() {
 
   const routes = (
     <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
+      <ProtectedRoute path="/" component={DashboardPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/tokenization" component={TokenizationPage} />
       <ProtectedRoute path="/merchant" component={MerchantPage} />
@@ -33,6 +36,9 @@ function Router() {
       <ProtectedRoute path="/trading" component={TradingPage} />
       <ProtectedRoute path="/tutorial" component={TutorialPage} />
       <ProtectedRoute path="/earn" component={GamificationPage} />
+      <ProtectedRoute path="/convert" component={ConvertPage} />
+      <ProtectedRoute path="/history" component={HistoryPage} />
+      <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

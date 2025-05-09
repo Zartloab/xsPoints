@@ -11,9 +11,9 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const [location] = useLocation();
 
   const navItems = [
-    { icon: Home, label: 'Home', href: '/' },
-    { icon: Repeat, label: 'Exchange', href: '/exchange' },
-    { icon: BarChart3, label: 'Explorer', href: '/explorer' },
+    { icon: Home, label: 'Dashboard', href: '/dashboard' },
+    { icon: Repeat, label: 'Convert', href: '/convert' },
+    { icon: BarChart3, label: 'History', href: '/history' },
     { icon: Trophy, label: 'Earn', href: '/earn' },
     { icon: User, label: 'Profile', href: '/profile' },
   ];
