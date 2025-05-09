@@ -387,9 +387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // This endpoint will return all available trade offers excluding the user's own
-      // For now, we'll return a placeholder empty array
-      res.json([]);
+      // Get all active trade offers excluding the current user's
+      const tradeOffers = await storage.getTradeOffers(req.user!.id);
+      res.json(tradeOffers);
     } catch (error) {
       console.error("Error fetching trade offers:", error);
       res.status(500).json({ message: "Failed to fetch trade offers" });
@@ -401,9 +401,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // This endpoint will return all of the user's own trade offers
-      // For now, we'll return a placeholder empty array
-      res.json([]);
+      // Get the current user's trade offers
+      const userOffers = await storage.getUserTradeOffers(req.user!.id);
+      res.json(userOffers);
     } catch (error) {
       console.error("Error fetching user's trade offers:", error);
       res.status(500).json({ message: "Failed to fetch your trade offers" });
@@ -449,10 +449,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + data.expiresIn);
       
-      // Create trade offer
-      // When we implement the actual storage method, this will be replaced
-      const tradeOffer = {
-        id: 1,
+      // Create the trade offer in the database
+      const tradeOffer = await storage.createTradeOffer({
         createdBy: req.user!.id,
         fromProgram: data.fromProgram,
         toProgram: data.toProgram,
@@ -461,14 +459,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customRate: customRate.toString(),
         marketRate: marketRate.rate,
         savings: savings.toString(),
-        createdAt: new Date(),
         expiresAt,
-        status: "open",
         description: data.description || null
-      };
+      });
       
       // Lock the funds by reducing user's balance
-      // await storage.updateWalletBalance(sourceWallet.id, sourceWallet.balance - data.amountOffered);
+      await storage.updateWalletBalance(
+        sourceWallet.id, 
+        sourceWallet.balance - data.amountOffered
+      );
       
       res.status(201).json(tradeOffer);
     } catch (error) {
@@ -488,19 +487,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
+      const offerId = parseInt(id);
       
       // Validate offer ID
-      if (!id || isNaN(Number(id))) {
+      if (!id || isNaN(offerId)) {
         return res.status(400).json({ message: "Invalid trade offer ID" });
       }
       
       // Check if offer exists and belongs to user
-      // This would be implemented when we add the trade storage methods
+      const offer = await storage.getTradeOffer(offerId);
       
-      // For now, we'll just return a success message
+      if (!offer) {
+        return res.status(404).json({ message: "Trade offer not found" });
+      }
+      
+      if (offer.createdBy !== req.user!.id) {
+        return res.status(403).json({ message: "You can only cancel your own trade offers" });
+      }
+      
+      if (offer.status !== "open") {
+        return res.status(400).json({ message: "Can only cancel open trade offers" });
+      }
+      
+      // Update offer status to cancelled
+      const updatedOffer = await storage.updateTradeOfferStatus(offerId, "cancelled");
+      
+      // Return the locked funds to the user's wallet
+      const wallet = await storage.getWallet(req.user!.id, offer.fromProgram);
+      if (wallet) {
+        await storage.updateWalletBalance(
+          wallet.id, 
+          wallet.balance + offer.amountOffered
+        );
+      }
+      
       res.status(200).json({ 
         message: "Trade offer cancelled successfully", 
-        id: parseInt(id),
+        id: offerId,
         status: "cancelled"
       });
     } catch (error) {
@@ -515,34 +538,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
+      const offerId = parseInt(id);
       
       // Validate offer ID
-      if (!id || isNaN(Number(id))) {
+      if (!id || isNaN(offerId)) {
         return res.status(400).json({ message: "Invalid trade offer ID" });
       }
       
       // Validate request body
       const data = acceptTradeOfferSchema.parse(req.body);
       
-      // Check if offer exists, is still open, and not expired
-      // This would be implemented when we add the trade storage methods
+      // Get the trade offer from the database
+      const tradeOffer = await storage.getTradeOffer(offerId);
       
-      // Get offer details (placeholder for now)
-      const tradeOffer = {
-        id: parseInt(id),
-        createdBy: 2, // Some other user's ID
-        fromProgram: "QANTAS" as LoyaltyProgram,
-        toProgram: "XPOINTS" as LoyaltyProgram,
-        amountOffered: 1000,
-        amountRequested: 500,
-        customRate: "0.5",
-        marketRate: "0.6",
-        savings: "16.67",
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        status: "open",
-        description: null
-      };
+      if (!tradeOffer) {
+        return res.status(404).json({ message: "Trade offer not found" });
+      }
+      
+      // Check if the offer is still open
+      if (tradeOffer.status !== "open") {
+        return res.status(400).json({ 
+          message: "This trade offer is no longer available",
+          status: tradeOffer.status
+        });
+      }
+      
+      // Check if the offer has expired
+      if (new Date() > new Date(tradeOffer.expiresAt)) {
+        // Automatically update the status to expired
+        await storage.updateTradeOfferStatus(offerId, "expired");
+        
+        // Return locked funds to the seller
+        const sellerWallet = await storage.getWallet(tradeOffer.createdBy, tradeOffer.fromProgram);
+        if (sellerWallet) {
+          await storage.updateWalletBalance(
+            sellerWallet.id,
+            sellerWallet.balance + tradeOffer.amountOffered
+          );
+        }
+        
+        return res.status(400).json({ message: "This trade offer has expired" });
+      }
       
       // Check if user is trying to accept their own offer
       if (tradeOffer.createdBy === req.user!.id) {
@@ -561,15 +597,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get seller's wallet (the user who created the offer)
-      const sellerWallet = {
-        id: 5,
-        userId: tradeOffer.createdBy,
-        program: tradeOffer.fromProgram,
-        balance: 5000,
-        accountNumber: null,
-        accountName: null,
-        createdAt: new Date()
-      };
+      const sellerWallet = await storage.getWallet(tradeOffer.createdBy, tradeOffer.fromProgram);
+      if (!sellerWallet) {
+        return res.status(404).json({ message: "Seller wallet not found" });
+      }
       
       // Calculate fee based on savings (percentage of market advantage)
       const marketRateValue = Number(tradeOffer.marketRate);
@@ -591,31 +622,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Trade fees - Savings: ${savingsPercent.toFixed(2)}%, Fee rate: ${(feePercentage*100).toFixed(2)}%, Seller fee: ${sellerFee}`);
       
       // Process the trade
-      // 1. Update seller's wallet: add requested amount minus fees
-      // 2. Update buyer's wallet: add offered amount, subtract requested amount
-      // 3. Update offer status to completed
-      // 4. Create a trade transaction record
+      // 1. Update offer status to completed
+      await storage.updateTradeOfferStatus(offerId, "completed");
       
-      // This would be implemented when we add the trade storage methods
-      // For now, we'll just return a success message
+      // 2. Update buyer's wallet: add offered amount, subtract requested amount
+      await storage.updateWalletBalance(
+        buyerWallet.id,
+        buyerWallet.balance - tradeOffer.amountRequested + tradeOffer.amountOffered
+      );
+      
+      // 3. Update seller's wallet: add requested amount minus fees
+      await storage.updateWalletBalance(
+        sellerWallet.id,
+        sellerWallet.balance + tradeOffer.amountRequested - sellerFee
+      );
+      
+      // 4. Create a trade transaction record
+      const transaction = await storage.createTradeTransaction({
+        tradeOfferId: tradeOffer.id,
+        sellerId: tradeOffer.createdBy,
+        buyerId: req.user!.id,
+        sellerWalletId: sellerWallet.id,
+        buyerWalletId: buyerWallet.id,
+        amountSold: tradeOffer.amountOffered,
+        amountBought: tradeOffer.amountRequested,
+        rate: tradeOffer.customRate,
+        sellerFee: sellerFee,
+        buyerFee: buyerFee,
+        status: "completed"
+      });
       
       res.status(200).json({
         message: "Trade completed successfully",
-        transaction: {
-          id: 1,
-          tradeOfferId: tradeOffer.id,
-          sellerId: tradeOffer.createdBy,
-          buyerId: req.user!.id,
-          completedAt: new Date(),
-          sellerWalletId: sellerWallet.id,
-          buyerWalletId: buyerWallet.id,
-          amountSold: tradeOffer.amountOffered,
-          amountBought: tradeOffer.amountRequested,
-          rate: tradeOffer.customRate,
-          sellerFee: sellerFee.toFixed(2),
-          buyerFee: buyerFee.toFixed(2),
-          status: "completed"
-        }
+        transaction
       });
     } catch (error) {
       console.error("Error accepting trade offer:", error);
@@ -633,10 +672,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // This endpoint will return all completed trades where the user was involved
-      // Either as a buyer or seller
-      // For now, we'll return a placeholder empty array
-      res.json([]);
+      // Get the user's trade history (as both buyer and seller)
+      const tradeHistory = await storage.getTradeHistory(req.user!.id);
+      res.json(tradeHistory);
     } catch (error) {
       console.error("Error fetching trade history:", error);
       res.status(500).json({ message: "Failed to fetch trade history" });

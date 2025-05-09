@@ -9,7 +9,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, ne, or } from "drizzle-orm";
 
 // Define a SessionStore type to avoid the namespace error
 type SessionStore = session.Store;
@@ -89,84 +89,120 @@ export class DatabaseStorage implements IStorage {
       // Check if exchange rates exist
       const existingRates = await db.select().from(schema.exchangeRates);
       
+      // Define all supported loyalty programs
+      const allPrograms: LoyaltyProgram[] = [
+        'QANTAS', 
+        'GYG', 
+        'XPOINTS', 
+        'VELOCITY', 
+        'AMEX', 
+        'FLYBUYS', 
+        'HILTON', 
+        'MARRIOTT',
+        'AIRBNB',
+        'DELTA'
+      ];
+      
       if (existingRates.length === 0) {
-        // Initial rates to set up
-        const initialRates = [
-          // QANTAS to other programs
-          {
-            fromProgram: 'QANTAS' as LoyaltyProgram,
-            toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: "0.5", 
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'QANTAS' as LoyaltyProgram,
-            toProgram: 'GYG' as LoyaltyProgram,
-            rate: "0.625", // 0.5 * 1.25 (QANTAS→XPOINTS→GYG)
-            lastUpdated: new Date(),
-          },
-          // XPOINTS to other programs
-          {
-            fromProgram: 'XPOINTS' as LoyaltyProgram,
-            toProgram: 'QANTAS' as LoyaltyProgram,
-            rate: "1.8",
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'XPOINTS' as LoyaltyProgram,
-            toProgram: 'GYG' as LoyaltyProgram,
-            rate: "1.25",
-            lastUpdated: new Date(),
-          },
-          // GYG to other programs
-          {
-            fromProgram: 'GYG' as LoyaltyProgram,
-            toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: "0.8",
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'GYG' as LoyaltyProgram,
-            toProgram: 'QANTAS' as LoyaltyProgram,
-            rate: "1.44", // 0.8 * 1.8 (GYG→XPOINTS→QANTAS)
-            lastUpdated: new Date(),
-          },
-          // Self-referential rates (for completeness)
-          {
-            fromProgram: 'QANTAS' as LoyaltyProgram,
-            toProgram: 'QANTAS' as LoyaltyProgram,
-            rate: "1.0",
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'XPOINTS' as LoyaltyProgram,
-            toProgram: 'XPOINTS' as LoyaltyProgram,
-            rate: "1.0",
-            lastUpdated: new Date(),
-          },
-          {
-            fromProgram: 'GYG' as LoyaltyProgram,
-            toProgram: 'GYG' as LoyaltyProgram,
-            rate: "1.0",
-            lastUpdated: new Date(),
+        // Define base exchange rates to XPOINTS (our universal currency)
+        const baseRatesToXPoints: Record<LoyaltyProgram, number> = {
+          'QANTAS': 0.5,
+          'GYG': 0.8,
+          'XPOINTS': 1.0,
+          'VELOCITY': 0.6,
+          'AMEX': 0.75,
+          'FLYBUYS': 0.9,
+          'HILTON': 0.4,
+          'MARRIOTT': 0.45,
+          'AIRBNB': 0.65,
+          'DELTA': 0.55
+        };
+        
+        const baseRatesFromXPoints: Record<LoyaltyProgram, number> = {
+          'QANTAS': 1.8,
+          'GYG': 1.25,
+          'XPOINTS': 1.0,
+          'VELOCITY': 1.6,
+          'AMEX': 1.3,
+          'FLYBUYS': 1.1,
+          'HILTON': 2.4,
+          'MARRIOTT': 2.2,
+          'AIRBNB': 1.5,
+          'DELTA': 1.7
+        };
+        
+        const initialRates = [];
+        
+        // Generate all possible program-to-program combinations
+        for (const fromProgram of allPrograms) {
+          for (const toProgram of allPrograms) {
+            let rate: string;
+            
+            if (fromProgram === toProgram) {
+              // Same program conversion rate is always 1.0
+              rate = "1.0";
+            } else if (fromProgram === 'XPOINTS') {
+              // Direct conversion from XPOINTS to another program
+              rate = baseRatesFromXPoints[toProgram].toString();
+            } else if (toProgram === 'XPOINTS') {
+              // Direct conversion from another program to XPOINTS
+              rate = baseRatesToXPoints[fromProgram].toString();
+            } else {
+              // Indirect conversion: fromProgram → XPOINTS → toProgram
+              const rateViaXPoints = baseRatesToXPoints[fromProgram] * baseRatesFromXPoints[toProgram];
+              rate = rateViaXPoints.toString();
+            }
+            
+            initialRates.push({
+              fromProgram: fromProgram as LoyaltyProgram,
+              toProgram: toProgram as LoyaltyProgram,
+              rate,
+              lastUpdated: new Date()
+            });
           }
-        ];
+        }
         
         // Insert initial exchange rates
         await db.insert(schema.exchangeRates).values(initialRates);
       } else {
-        // Check if we have all the necessary rates (9 combinations total)
-        const requiredCombinations = [
-          { from: 'QANTAS', to: 'XPOINTS' },
-          { from: 'QANTAS', to: 'GYG' },
-          { from: 'QANTAS', to: 'QANTAS' },
-          { from: 'XPOINTS', to: 'QANTAS' },
-          { from: 'XPOINTS', to: 'GYG' },
-          { from: 'XPOINTS', to: 'XPOINTS' },
-          { from: 'GYG', to: 'QANTAS' },
-          { from: 'GYG', to: 'XPOINTS' },
-          { from: 'GYG', to: 'GYG' }
-        ];
+        // Generate all required combinations between programs
+        const requiredCombinations = [];
+        
+        for (const fromProgram of allPrograms) {
+          for (const toProgram of allPrograms) {
+            requiredCombinations.push({
+              from: fromProgram,
+              to: toProgram
+            });
+          }
+        }
+        
+        // Define base rates to use for missing combinations
+        const baseRatesToXPoints: Record<LoyaltyProgram, number> = {
+          'QANTAS': 0.5,
+          'GYG': 0.8,
+          'XPOINTS': 1.0,
+          'VELOCITY': 0.6,
+          'AMEX': 0.75,
+          'FLYBUYS': 0.9,
+          'HILTON': 0.4,
+          'MARRIOTT': 0.45,
+          'AIRBNB': 0.65,
+          'DELTA': 0.55
+        };
+        
+        const baseRatesFromXPoints: Record<LoyaltyProgram, number> = {
+          'QANTAS': 1.8,
+          'GYG': 1.25,
+          'XPOINTS': 1.0,
+          'VELOCITY': 1.6,
+          'AMEX': 1.3,
+          'FLYBUYS': 1.1,
+          'HILTON': 2.4,
+          'MARRIOTT': 2.2,
+          'AIRBNB': 1.5,
+          'DELTA': 1.7
+        };
         
         // Check which combinations are missing
         for (const combo of requiredCombinations) {
@@ -176,15 +212,21 @@ export class DatabaseStorage implements IStorage {
           
           if (!exists) {
             console.log(`Adding missing exchange rate: ${combo.from} to ${combo.to}`);
-            let rate = "1.0"; // Default for same program
+            let rate: string;
             
-            // Calculate rates for missing combinations
-            if (combo.from !== combo.to) {
-              if (combo.from === 'QANTAS' && combo.to === 'GYG') {
-                rate = "0.625"; // QANTAS→XPOINTS→GYG
-              } else if (combo.from === 'GYG' && combo.to === 'QANTAS') {
-                rate = "1.44"; // GYG→XPOINTS→QANTAS
-              }
+            if (combo.from === combo.to) {
+              // Same program conversion rate is always 1.0
+              rate = "1.0";
+            } else if (combo.from === 'XPOINTS') {
+              // Direct conversion from XPOINTS to another program
+              rate = baseRatesFromXPoints[combo.to].toString();
+            } else if (combo.to === 'XPOINTS') {
+              // Direct conversion from another program to XPOINTS
+              rate = baseRatesToXPoints[combo.from].toString();
+            } else {
+              // Indirect conversion: fromProgram → XPOINTS → toProgram
+              const rateViaXPoints = baseRatesToXPoints[combo.from] * baseRatesFromXPoints[combo.to];
+              rate = rateViaXPoints.toFixed(4);
             }
             
             await db.insert(schema.exchangeRates).values({
@@ -757,7 +799,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.tradeOffers.status, "open"));
     
     if (excludeUserId) {
-      query = query.where(ne(schema.tradeOffers.createdBy, excludeUserId));
+      return db
+        .select()
+        .from(schema.tradeOffers)
+        .where(
+          and(
+            eq(schema.tradeOffers.status, "open"),
+            ne(schema.tradeOffers.createdBy, excludeUserId)
+          )
+        )
+        .orderBy(desc(schema.tradeOffers.createdAt));
     }
     
     return query.orderBy(desc(schema.tradeOffers.createdAt));
@@ -781,12 +832,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTradeOffer(data: Omit<TradeOffer, "id" | "createdAt" | "status">): Promise<TradeOffer> {
+    const offerData = {
+      createdBy: data.createdBy,
+      fromProgram: data.fromProgram,
+      toProgram: data.toProgram,
+      amountOffered: data.amountOffered,
+      amountRequested: data.amountRequested,
+      customRate: data.customRate,
+      marketRate: data.marketRate,
+      savings: data.savings,
+      expiresAt: data.expiresAt,
+      description: data.description,
+      status: "open"
+    };
+    
     const [tradeOffer] = await db
       .insert(schema.tradeOffers)
-      .values({
-        ...data,
-        status: "open"
-      })
+      .values(offerData)
       .returning();
     
     return tradeOffer;
@@ -816,9 +878,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction> {
+    const transactionData = {
+      tradeOfferId: data.tradeOfferId,
+      sellerId: data.sellerId,
+      buyerId: data.buyerId,
+      sellerWalletId: data.sellerWalletId,
+      buyerWalletId: data.buyerWalletId,
+      amountSold: data.amountSold,
+      amountBought: data.amountBought,
+      rate: data.rate,
+      sellerFee: data.sellerFee,
+      buyerFee: data.buyerFee,
+      status: data.status
+    };
+    
     const [transaction] = await db
       .insert(schema.tradeTransactions)
-      .values(data)
+      .values(transactionData)
       .returning();
     
     return transaction;
@@ -1048,6 +1124,35 @@ export class MemStorage implements IStorage {
   
   async bulkIssuePoints(data: BulkPointIssuanceData): Promise<number> {
     // Not implemented in MemStorage
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  // Trading operations (stub implementations)
+  async getTradeOffers(excludeUserId?: number): Promise<TradeOffer[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getUserTradeOffers(userId: number): Promise<TradeOffer[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getTradeOffer(id: number): Promise<TradeOffer | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async createTradeOffer(data: Omit<TradeOffer, "id" | "createdAt" | "status">): Promise<TradeOffer> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async updateTradeOfferStatus(id: number, status: string): Promise<TradeOffer | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getTradeHistory(userId: number): Promise<TradeTransaction[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  
+  async createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction> {
     throw new Error("Not implemented in MemStorage");
   }
 }

@@ -36,7 +36,18 @@ export const users = pgTable("users", {
 });
 
 // Programs enum for loyalty programs
-export const loyaltyProgramEnum = pgEnum("loyalty_program", ["QANTAS", "GYG", "XPOINTS"]);
+export const loyaltyProgramEnum = pgEnum("loyalty_program", [
+  "QANTAS", 
+  "GYG", 
+  "XPOINTS", 
+  "VELOCITY", 
+  "AMEX", 
+  "FLYBUYS", 
+  "HILTON", 
+  "MARRIOTT",
+  "AIRBNB",
+  "DELTA"
+]);
 
 // Business table - for merchants/businesses that want to issue their own points
 export const businesses = pgTable("businesses", {
@@ -125,13 +136,13 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
 });
 
 export const convertPointsSchema = z.object({
-  fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
-  toProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
+  fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
+  toProgram: z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
   amount: z.number().positive(),
 });
 
 export const linkAccountSchema = z.object({
-  program: z.enum(["QANTAS", "GYG"]),
+  program: z.enum(["QANTAS", "GYG", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
   accountNumber: z.string().min(1),
   accountName: z.string().min(1),
 });
@@ -243,8 +254,8 @@ export const businessIssuePointsSchema = z.object({
 
 // Schema for creating new trade offers
 export const createTradeOfferSchema = z.object({
-  fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
-  toProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
+  fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
+  toProgram: z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
   amountOffered: z.number().positive(),
   amountRequested: z.number().positive(),
   expiresIn: z.number().int().min(1).max(30).default(7), // Days until expiration (default 7 days)
@@ -287,7 +298,7 @@ export const bulkPointIssuanceSchema = z.object({
   expirationDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
 });
 
-export type LoyaltyProgram = "QANTAS" | "GYG" | "XPOINTS";
+export type LoyaltyProgram = "QANTAS" | "GYG" | "XPOINTS" | "VELOCITY" | "AMEX" | "FLYBUYS" | "HILTON" | "MARRIOTT" | "AIRBNB" | "DELTA";
 export type MembershipTier = "STANDARD" | "SILVER" | "GOLD" | "PLATINUM";
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertBusiness = z.infer<typeof insertBusinessSchema>;
