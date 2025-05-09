@@ -1,4 +1,9 @@
-import { users, wallets, transactions, exchangeRates, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, type LoyaltyProgram } from "@shared/schema";
+import { 
+  users, wallets, transactions, exchangeRates, tierBenefits, businessAnalytics,
+  type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
+  type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
+  type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
@@ -17,6 +22,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User>;
+  updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User>;
+  getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }>;
   
   // Wallet operations
   getUserWallets(userId: number): Promise<Wallet[]>;
@@ -31,6 +39,16 @@ export interface IStorage {
   
   // Exchange rates operations
   getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined>;
+  
+  // Tier benefits operations
+  getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined>;
+  createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit>;
+  initializeTierBenefits(): Promise<void>;
+  
+  // Business analytics operations
+  getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined>;
+  updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics>;
+  bulkIssuePoints(data: BulkPointIssuanceData): Promise<number>; // Returns number of successful issuances
   
   // Session store
   sessionStore: SessionStore;

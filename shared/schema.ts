@@ -2,6 +2,21 @@ import { pgTable, text, serial, pgEnum, timestamp, numeric, real, boolean } from
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Membership tiers enum
+export const membershipTierEnum = pgEnum("membership_tier", ["STANDARD", "SILVER", "GOLD", "PLATINUM"]);
+
+// Tier Benefits table - defines benefits for each membership tier
+export const tierBenefits = pgTable("tier_benefits", {
+  id: serial("id").primaryKey(),
+  tier: membershipTierEnum("tier").notNull(),
+  monthlyPointsThreshold: real("monthly_points_threshold").notNull(), // Points needed for this tier
+  freeConversionLimit: real("free_conversion_limit").default(10000).notNull(), // Free conversion up to this amount
+  conversionFeeRate: numeric("conversion_fee_rate").default("0.005").notNull(), // 0.5% for standard
+  p2pMinimumFee: numeric("p2p_minimum_fee").default("0.005").notNull(), // Minimum fee rate for P2P trades
+  p2pMaximumFee: numeric("p2p_maximum_fee").default("0.03").notNull(), // Maximum fee cap for P2P trades
+  monthlyExpiryDays: serial("monthly_expiry_days").default(30).notNull(), // How many days tier lasts after qualifying
+});
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -12,6 +27,12 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   kycVerified: pgEnum("kyc_status", ["unverified", "pending", "verified"])("kyc_verified").default("unverified").notNull(),
+  membershipTier: membershipTierEnum("membership_tier").default("STANDARD").notNull(),
+  tierExpiresAt: timestamp("tier_expires_at"),
+  pointsConverted: real("points_converted").default(0).notNull(), // Lifetime points converted
+  monthlyPointsConverted: real("monthly_points_converted").default(0).notNull(), // Monthly points converted
+  lastMonthReset: timestamp("last_month_reset"), // Last time monthly points were reset
+  totalFeesPaid: real("total_fees_paid").default(0).notNull(), // Lifetime fees paid
 });
 
 // Programs enum for loyalty programs
@@ -140,6 +161,18 @@ export const businessPointIssuance = pgTable("business_point_issuance", {
   status: text("status").default("active").notNull(), // active, used, expired
 });
 
+// Business Analytics table - for business dashboard statistics
+export const businessAnalytics = pgTable("business_analytics", {
+  id: serial("id").primaryKey(),
+  businessId: serial("business_id").references(() => businesses.id),
+  totalUsers: serial("total_users").default(0).notNull(), // Total users who have received points
+  activeUsers: serial("active_users").default(0).notNull(), // Users who have received points in last 30 days
+  totalPointsIssued: numeric("total_points_issued").default("0").notNull(), // Total points issued
+  totalPointsRedeemed: numeric("total_points_redeemed").default("0").notNull(), // Points redeemed/used 
+  averagePointsPerUser: numeric("average_points_per_user").default("0").notNull(), // Average points per user
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(), // Last time these stats were updated
+});
+
 // P2P Trade Offers - for user-to-user direct point trading
 export const tradeOffers = pgTable("trade_offers", {
   id: serial("id").primaryKey(),
@@ -223,12 +256,47 @@ export const acceptTradeOfferSchema = z.object({
   tradeOfferId: z.number().positive(),
 });
 
+// Create schemas for tier benefits
+export const insertTierBenefitsSchema = createInsertSchema(tierBenefits).pick({
+  tier: true,
+  monthlyPointsThreshold: true,
+  freeConversionLimit: true,
+  conversionFeeRate: true,
+  p2pMinimumFee: true,
+  p2pMaximumFee: true,
+  monthlyExpiryDays: true,
+});
+
+// Create schema for business analytics
+export const insertBusinessAnalyticsSchema = createInsertSchema(businessAnalytics).pick({
+  businessId: true,
+  totalUsers: true,
+  activeUsers: true,
+  totalPointsIssued: true,
+  totalPointsRedeemed: true,
+  averagePointsPerUser: true,
+});
+
+// Schema for bulk point issuance
+export const bulkPointIssuanceSchema = z.object({
+  businessProgramId: z.number().positive(),
+  userIds: z.array(z.number().positive()),
+  pointsPerUser: z.number().positive(),
+  reason: z.string().optional(),
+  reference: z.string().optional(),
+  expirationDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
+});
+
 export type LoyaltyProgram = "QANTAS" | "GYG" | "XPOINTS";
+export type MembershipTier = "STANDARD" | "SILVER" | "GOLD" | "PLATINUM";
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertBusiness = z.infer<typeof insertBusinessSchema>;
 export type InsertBusinessProgram = z.infer<typeof insertBusinessProgramSchema>;
 export type InsertBusinessPayment = z.infer<typeof insertBusinessPaymentSchema>;
+export type InsertTierBenefits = z.infer<typeof insertTierBenefitsSchema>;
+export type InsertBusinessAnalytics = z.infer<typeof insertBusinessAnalyticsSchema>;
 export type BusinessIssuePointsData = z.infer<typeof businessIssuePointsSchema>;
+export type BulkPointIssuanceData = z.infer<typeof bulkPointIssuanceSchema>;
 export type CreateTradeOfferData = z.infer<typeof createTradeOfferSchema>;
 export type AcceptTradeOfferData = z.infer<typeof acceptTradeOfferSchema>;
 export type User = typeof users.$inferSelect;
@@ -236,6 +304,8 @@ export type Business = typeof businesses.$inferSelect;
 export type BusinessProgram = typeof businessPrograms.$inferSelect;
 export type BusinessPayment = typeof businessPayments.$inferSelect;
 export type BusinessPointIssuance = typeof businessPointIssuance.$inferSelect;
+export type BusinessAnalytics = typeof businessAnalytics.$inferSelect;
+export type TierBenefit = typeof tierBenefits.$inferSelect;
 export type TradeOffer = typeof tradeOffers.$inferSelect;
 export type TradeTransaction = typeof tradeTransactions.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
