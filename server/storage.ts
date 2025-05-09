@@ -1,5 +1,5 @@
+import * as schema from "@shared/schema";
 import { 
-  users, wallets, transactions, exchangeRates, tierBenefits, businessAnalytics,
   type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
   type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData
@@ -8,7 +8,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 // Define a SessionStore type to avoid the namespace error
 type SessionStore = session.Store;
@@ -77,7 +77,7 @@ export class DatabaseStorage implements IStorage {
   private async initializeExchangeRates() {
     try {
       // Check if exchange rates exist
-      const existingRates = await db.select().from(exchangeRates);
+      const existingRates = await db.select().from(schema.exchangeRates);
       
       if (existingRates.length === 0) {
         // Initial rates to set up
@@ -109,7 +109,7 @@ export class DatabaseStorage implements IStorage {
         ];
         
         // Insert initial exchange rates
-        await db.insert(exchangeRates).values(initialRates);
+        await db.insert(schema.exchangeRates).values(initialRates);
       }
     } catch (error) {
       console.error("Error initializing exchange rates:", error);
@@ -542,8 +542,8 @@ export class DatabaseStorage implements IStorage {
   async getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined> {
     const [analytics] = await db
       .select()
-      .from(businessAnalytics)
-      .where(eq(businessAnalytics.businessId, businessId));
+      .from(schema.businessAnalytics)
+      .where(eq(schema.businessAnalytics.businessId, businessId));
     
     return analytics;
   }
@@ -554,22 +554,24 @@ export class DatabaseStorage implements IStorage {
     if (existingAnalytics) {
       // Update existing analytics
       const [updated] = await db
-        .update(businessAnalytics)
+        .update(schema.businessAnalytics)
         .set(data)
-        .where(eq(businessAnalytics.businessId, businessId))
+        .where(eq(schema.businessAnalytics.businessId, businessId))
         .returning();
       
       return updated;
     } else {
       // Create new analytics record
       const [newAnalytics] = await db
-        .insert(businessAnalytics)
+        .insert(schema.businessAnalytics)
         .values({
           businessId,
-          totalPointsIssued: data.totalPointsIssued || 0,
-          totalCustomers: data.totalCustomers || 0,
-          totalIssuances: data.totalIssuances || 0,
-          lastIssuanceDate: data.lastIssuanceDate || new Date()
+          totalUsers: data.totalUsers || 0,
+          activeUsers: data.activeUsers || 0,
+          totalPointsIssued: data.totalPointsIssued || "0",
+          totalPointsRedeemed: data.totalPointsRedeemed || "0",
+          averagePointsPerUser: data.averagePointsPerUser || "0",
+          lastUpdated: new Date()
         })
         .returning();
       
@@ -581,9 +583,7 @@ export class DatabaseStorage implements IStorage {
     let successCount = 0;
     
     // Begin transaction for consistency
-    const tx = await db.transaction();
-    
-    try {
+    const tx = db.transaction(async (tx) => {
       // Get user IDs
       const userIds = data.userIds;
       
@@ -607,7 +607,7 @@ export class DatabaseStorage implements IStorage {
               amountFrom: data.pointsPerUser,
               amountTo: data.pointsPerUser,
               feeApplied: 0,
-              description: `Points issued by business program ${data.businessProgramId}: ${data.reason || 'Bulk issuance'}`
+              status: "COMPLETED"
             });
             
             successCount++;
@@ -631,7 +631,7 @@ export class DatabaseStorage implements IStorage {
           });
         } else {
           // Create new analytics record
-          await db.insert(businessAnalytics).values({
+          await db.insert(schema.businessAnalytics).values({
             businessId,
             totalUsers: successCount,
             activeUsers: successCount,
@@ -643,11 +643,13 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      await tx.commit();
       return successCount;
+    });
+    
+    try {
+      return await tx;
     } catch (error) {
       console.error("Error in bulk point issuance:", error);
-      await tx.rollback();
       throw error;
     }
   }
@@ -656,8 +658,8 @@ export class DatabaseStorage implements IStorage {
   private async getBusinessIdFromProgram(businessProgramId: number): Promise<number | null> {
     const [program] = await db
       .select()
-      .from(businessPrograms)
-      .where(eq(businessPrograms.id, businessProgramId));
+      .from(schema.businessPrograms)
+      .where(eq(schema.businessPrograms.id, businessProgramId));
     
     return program ? program.businessId : null;
   }
@@ -730,7 +732,13 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       createdAt: new Date(),
-      kycVerified: "unverified"
+      kycVerified: "unverified",
+      membershipTier: "STANDARD",
+      tierExpiresAt: null,
+      pointsConverted: 0,
+      monthlyPointsConverted: 0,
+      lastMonthReset: null,
+      totalFeesPaid: 0
     };
     this.users.set(id, user);
     

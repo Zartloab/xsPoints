@@ -61,6 +61,61 @@ async function addMissingColumnsToUsers() {
       console.log("Tier benefits table already exists");
     }
     
+    // Check if businesses table exists
+    const checkBusinessesTable = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_name = 'businesses'
+    `);
+    
+    // Create businesses table if it doesn't exist
+    if (checkBusinessesTable.rows.length === 0) {
+      console.log("Creating businesses table...");
+      
+      await pool.query(`
+        CREATE TABLE businesses (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          industry TEXT,
+          contact_name TEXT,
+          contact_phone TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      
+      console.log("Successfully created businesses table");
+    } else {
+      console.log("Businesses table already exists");
+    }
+    
+    // Check if business_programs table exists
+    const checkProgramsTable = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_name = 'business_programs'
+    `);
+    
+    // Create business_programs table if it doesn't exist
+    if (checkProgramsTable.rows.length === 0) {
+      console.log("Creating business_programs table...");
+      
+      await pool.query(`
+        CREATE TABLE business_programs (
+          id SERIAL PRIMARY KEY,
+          business_id INTEGER NOT NULL REFERENCES businesses(id),
+          name TEXT NOT NULL,
+          points_name TEXT NOT NULL,
+          conversion_rate TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      
+      console.log("Successfully created business_programs table");
+    } else {
+      console.log("Business programs table already exists");
+    }
+    
     // Check if business_analytics table exists
     const checkAnalyticsTable = await pool.query(`
       SELECT table_name 
