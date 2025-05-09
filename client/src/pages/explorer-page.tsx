@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
 import MainLayout from '@/components/layout/MainLayout';
 import MobileExplorerPage from '@/components/mobile/MobileExplorerPage';
+import PointsTranslator from '@/components/PointsTranslator';
 import {
   Card,
   CardContent,
@@ -261,10 +262,11 @@ export default function ExplorerPage() {
 
         {/* Explorer Tabs */}
         <Tabs defaultValue="market" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="market">Market Trends</TabsTrigger>
             <TabsTrigger value="rates">Exchange Rates</TabsTrigger>
             <TabsTrigger value="circulation">Points in Circulation</TabsTrigger>
+            <TabsTrigger value="translator">Points Translator</TabsTrigger>
           </TabsList>
           
           <TabsContent value="market" className="p-4 border rounded-md mt-4">
