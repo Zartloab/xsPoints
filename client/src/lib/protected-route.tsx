@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
+import MainLayout from "@/components/layout/MainLayout";
+import { usePreferredLayout } from "@/hooks/use-mobile";
 
 export function ProtectedRoute({
   path,
@@ -10,6 +12,7 @@ export function ProtectedRoute({
   component: () => React.JSX.Element;
 }) {
   const { user, isLoading } = useAuth();
+  const { useMobileLayout } = usePreferredLayout();
 
   if (isLoading) {
     return (
@@ -29,5 +32,20 @@ export function ProtectedRoute({
     );
   }
 
-  return <Route path={path} component={Component} />;
+  // If using mobile layout, we don't need to wrap components with MainLayout
+  // since MobileLayout is already applied at the router level
+  if (useMobileLayout) {
+    return <Route path={path} component={Component} />;
+  }
+
+  // For desktop view, we wrap each component with MainLayout
+  return (
+    <Route path={path}>
+      {(params) => (
+        <MainLayout>
+          <Component {...params} />
+        </MainLayout>
+      )}
+    </Route>
+  );
 }
