@@ -35,7 +35,7 @@ export default function HomePage() {
 
   // Desktop layout
   return (
-    <MainLayout>
+    <>
       <DashboardWallets />
       
       <div className="mb-8">
@@ -68,6 +68,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </MainLayout>
+    </>
   );
 }
