@@ -53,7 +53,7 @@ const TutorialPage = () => {
   const completionPercentage = (completedCount / totalTutorials) * 100;
 
   return (
-    <MainLayout>
+    
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -1599,7 +1599,7 @@ const TutorialPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
+
   );
 };
 

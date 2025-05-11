@@ -11,9 +11,10 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -31,66 +31,61 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
+  Plus,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Zap,
+  PackageOpen,
+  History,
+  Loader2,
+  X,
+  Check,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Badge } from "@/components/ui/badge";
 import { Wallet } from "@shared/schema";
-import { Loader2, Clock, RefreshCw, TrendingDown, Check, X } from "lucide-react";
-import MainLayout from "@/components/layout/MainLayout";
+
 
 // Define schemas for form validation
 const createTradeSchema = z.object({
   fromProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
   toProgram: z.enum(["QANTAS", "GYG", "XPOINTS"]),
-  amountOffered: z.coerce.number().positive(),
-  amountRequested: z.coerce.number().positive(),
-  expiresIn: z.coerce.number().int().min(1).max(30).default(7),
-  description: z.string().max(500).optional(),
-}).refine(data => data.fromProgram !== data.toProgram, {
-  message: "Cannot trade between the same program",
-  path: ["toProgram"],
+  amountOffered: z.number().min(100, "Minimum amount is 100 points").optional(),
+  amountRequested: z.number().min(100, "Minimum amount is 100 points").optional(),
+  description: z.string().max(250, "Maximum 250 characters").optional(),
+  expiresAt: z.date().min(new Date(), "Expiry must be in the future").optional(),
 });
 
-// Interface for trade offers
+type CreateTradeValues = z.infer<typeof createTradeSchema>;
+
+// Type for trade offers
 interface TradeOffer {
   id: number;
   createdBy: number;
-  fromProgram: "QANTAS" | "GYG" | "XPOINTS";
-  toProgram: "QANTAS" | "GYG" | "XPOINTS";
+  fromProgram: string;
+  toProgram: string;
   amountOffered: number;
   amountRequested: number;
-  customRate: string;
-  marketRate: string;
-  savings: string;
-  createdAt: string;
-  expiresAt: string;
-  status: string;
   description: string | null;
+  status: string;
+  createdAt: Date;
+  expiresAt: Date;
 }
 
-// Interface for trade transactions
+// Type for trade history
 interface TradeTransaction {
   id: number;
+  userId: number;
+  tradedWithUserId: number;
   tradeOfferId: number;
-  sellerId: number;
-  buyerId: number;
-  completedAt: string;
-  amountSold: number;
-  amountBought: number;
-  rate: string;
-  sellerFee: string;
-  buyerFee: string;
-  status: string;
+  fromProgram: string;
+  toProgram: string;
+  amountSent: number;
+  amountReceived: number;
+  completedAt: Date | null;
 }
 
 export default function TradingPage() {
@@ -103,81 +98,69 @@ export default function TradingPage() {
   const form = useForm<z.infer<typeof createTradeSchema>>({
     resolver: zodResolver(createTradeSchema),
     defaultValues: {
-      fromProgram: "QANTAS",
-      toProgram: "XPOINTS",
+      fromProgram: "XPOINTS",
+      toProgram: "QANTAS",
       amountOffered: 1000,
-      amountRequested: 500,
-      expiresIn: 7,
+      amountRequested: 1500,
       description: "",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
   });
 
-  // Query to get user wallets for balance display
-  const { data: wallets = [] } = useQuery<Wallet[]>({
-    queryKey: ["/api/wallets"],
-  });
-
-  // Query to get all available trade offers (excluding the user's own)
-  const { data: tradeOffers = [], isLoading: isLoadingOffers } = useQuery<TradeOffer[]>({
+  // Fetch trade offers, excluding user's own offers
+  const tradeOfferData = useQuery<TradeOffer[]>({
     queryKey: ["/api/trades"],
-    // Placeholder since we don't have real data yet
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/trades");
-      return await res.json();
-    },
+    enabled: !!user,
   });
 
-  // Query to get user's own trade offers
-  const { data: myOffers = [], isLoading: isLoadingMyOffers } = useQuery<TradeOffer[]>({
+  // Fetch user's trade offers
+  const myOffersData = useQuery<TradeOffer[]>({
     queryKey: ["/api/trades/my-offers"],
-    // Placeholder since we don't have real data yet
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/trades/my-offers");
-      return await res.json();
-    },
+    enabled: !!user,
   });
 
-  // Query to get trade history (completed trades)
-  const { data: tradeHistory = [], isLoading: isLoadingHistory } = useQuery<TradeTransaction[]>({
+  // Fetch trade history
+  const tradeHistoryData = useQuery<TradeTransaction[]>({
     queryKey: ["/api/trades/history"],
-    // Placeholder since we don't have real data yet
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/trades/history");
-      return await res.json();
-    },
+    enabled: !!user,
   });
 
-  // Mutation for creating a new trade offer
+  // Fetch user wallets
+  const walletsData = useQuery<Wallet[]>({
+    queryKey: ["/api/wallets"],
+    enabled: !!user,
+  });
+
+  // Mutation for creating a trade offer
   const createTradeMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof createTradeSchema>) => {
-      const res = await apiRequest("POST", "/api/trades", data);
-      return await res.json();
+    mutationFn: async (data: CreateTradeValues) => {
+      const response = await apiRequest("POST", "/api/trades/create", data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trades/my-offers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       setCreateTradeOpen(false);
-      form.reset();
       toast({
-        title: "Trade offer created",
-        description: "Your trade offer has been published successfully.",
+        title: "Trade Offer Created",
+        description: "Your trade offer has been posted to the marketplace.",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to create trade offer",
-        description: error.message,
+        title: "Failed to Create Offer",
+        description: error.message || "There was an error creating your trade offer.",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation for accepting a trade offer
+  // Mutation for accepting a trade
   const acceptTradeMutation = useMutation({
-    mutationFn: async (tradeId: number) => {
-      const res = await apiRequest("POST", `/api/trades/${tradeId}/accept`, { tradeOfferId: tradeId });
-      return await res.json();
+    mutationFn: async (offerId: number) => {
+      const response = await apiRequest("POST", "/api/trades/accept", { offerId });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trades"] });
@@ -185,14 +168,15 @@ export default function TradingPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       setViewOfferDetails(null);
       toast({
-        title: "Trade completed",
-        description: "You have successfully completed the trade.",
+        title: "Trade Completed",
+        description: "The trade has been successfully completed.",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to accept trade",
-        description: error.message,
+        title: "Trade Failed",
+        description: error.message || "There was an error completing the trade.",
         variant: "destructive",
       });
     },
@@ -200,484 +184,551 @@ export default function TradingPage() {
 
   // Mutation for cancelling a trade offer
   const cancelTradeMutation = useMutation({
-    mutationFn: async (tradeId: number) => {
-      const res = await apiRequest("POST", `/api/trades/${tradeId}/cancel`);
-      return await res.json();
+    mutationFn: async (offerId: number) => {
+      const response = await apiRequest("POST", "/api/trades/cancel", { offerId });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trades/my-offers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       toast({
-        title: "Trade cancelled",
-        description: "Your trade offer has been cancelled.",
+        title: "Trade Offer Cancelled",
+        description: "Your trade offer has been removed from the marketplace.",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to cancel trade",
-        description: error.message,
+        title: "Failed to Cancel",
+        description: error.message || "There was an error cancelling your trade offer.",
         variant: "destructive",
       });
     },
   });
 
-  // Form submission handler
-  const onSubmit = (data: z.infer<typeof createTradeSchema>) => {
-    createTradeMutation.mutate(data);
-  };
-
-  // Helper function to get wallet balance
-  const getWalletBalance = (program: string) => {
-    const wallet = wallets.find(w => w.program === program);
-    return wallet ? wallet.balance : 0;
-  };
-
-  // Helper function to format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  // Helper function to format dates
+  const formatDate = (date: Date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
-  // Helper function to format a badge color based on program
-  const getProgramColor = (program: string) => {
+  // Helper function to calculate exchange rate
+  const calculateRate = (offer: TradeOffer) => {
+    const rate = (offer.amountRequested / offer.amountOffered).toFixed(2);
+    return `1:${rate}`;
+  };
+
+  // Get badge color by program
+  const getBadgeColor = (program: string) => {
     switch (program) {
-      case "QANTAS": return "text-red-500 bg-red-100";
-      case "GYG": return "text-green-500 bg-green-100";
-      case "XPOINTS": return "text-blue-500 bg-blue-100";
+      case "QANTAS": return "text-blue-600 bg-blue-100";
+      case "GYG": return "text-yellow-600 bg-yellow-100";
+      case "XPOINTS": return "text-violet-600 bg-violet-100";
+      case "VELOCITY": return "text-red-600 bg-red-100";
+      case "AMEX": return "text-green-600 bg-green-100";
       default: return "text-gray-500 bg-gray-100";
     }
   };
 
+  // Get the balance of a specific wallet
+  const getWalletBalance = (program: string): number => {
+    if (!walletsData.data) return 0;
+    const wallet = walletsData.data.find(w => w.program === program);
+    return wallet ? wallet.balance : 0;
+  };
+
   return (
-    <MainLayout>
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">P2P Trading</h1>
-            <p className="text-muted-foreground">
-              Trade loyalty points directly with other users at custom rates
-            </p>
-            <div className="mt-2 text-xs text-amber-600 flex items-center gap-1 font-medium">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
-              </svg>
-              Dynamic Fee Structure: 10% of your savings rate, capped at 3% (minimum 0.5%)
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">P2P Trading</h1>
+          <p className="text-muted-foreground">
+            Trade your loyalty points directly with other users.
+          </p>
+        </div>
+        <Button 
+          onClick={() => setCreateTradeOpen(true)}
+          className="flex items-center"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create Trade Offer
+        </Button>
+      </div>
+
+      <Tabs defaultValue="marketplace" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+          <TabsTrigger value="my-offers">My Offers</TabsTrigger>
+          <TabsTrigger value="history">Trade History</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="marketplace" className="py-4">
+          <div className="bg-muted/50 p-4 rounded-lg mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Search offers..." 
+                  className="w-full md:w-[300px]" 
+                />
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Programs</SelectItem>
+                    <SelectItem value="qantas">Qantas</SelectItem>
+                    <SelectItem value="gyg">GYG</SelectItem>
+                    <SelectItem value="velocity">Velocity</SelectItem>
+                    <SelectItem value="amex">Amex</SelectItem>
+                    <SelectItem value="flybuys">Flybuys</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                  Best Rate
+                </Badge>
+                <Badge variant="outline" className="flex items-center">
+                  <Clock className="h-3 w-3 mr-1 text-amber-500" />
+                  Ending Soon
+                </Badge>
+                <Badge variant="outline" className="flex items-center">
+                  <Zap className="h-3 w-3 mr-1 text-blue-500" />
+                  New
+                </Badge>
+              </div>
             </div>
           </div>
-          <Dialog open={createTradeOpen} onOpenChange={setCreateTradeOpen}>
-            <DialogTrigger asChild>
-              <Button>Create Trade Offer</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Create a New Trade Offer</DialogTitle>
-                <DialogDescription>
-                  Set your own rate and trade points directly with other users.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="fromProgram"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>I'm Offering</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select program" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="QANTAS">Qantas Points</SelectItem>
-                              <SelectItem value="GYG">GetYourGuide</SelectItem>
-                              <SelectItem value="XPOINTS">xPoints</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Balance: {getWalletBalance(field.value)}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="toProgram"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>I Want</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select program" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="QANTAS">Qantas Points</SelectItem>
-                              <SelectItem value="GYG">GetYourGuide</SelectItem>
-                              <SelectItem value="XPOINTS">xPoints</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="amountOffered"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount Offered</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="Amount" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="amountRequested"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount Requested</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="Amount" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="expiresIn"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expires In (days)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={1} max={30} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Add any notes about this trade offer" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button 
-                      type="submit" 
-                      disabled={createTradeMutation.isPending}
+
+          {tradeOfferData.isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : tradeOfferData.data?.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-md shadow-sm">
+              <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium mb-2">No Trade Offers Available</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                There are currently no trade offers available. Be the first to create an offer!
+              </p>
+              <Button onClick={() => setCreateTradeOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Trade Offer
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {tradeOfferData.data?.map((offer) => (
+                <Card key={offer.id} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(offer.fromProgram)}`}>
+                          {offer.fromProgram.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{offer.fromProgram}</p>
+                          <p className="text-sm text-muted-foreground">Offering</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(offer.toProgram)}`}>
+                          {offer.toProgram.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{offer.toProgram}</p>
+                          <p className="text-sm text-muted-foreground">Requesting</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pb-3">
+                    <div className="flex justify-between text-center p-3 bg-muted/50 rounded-lg mb-3">
+                      <div>
+                        <p className="text-xl font-bold">{offer.amountOffered.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Points offered</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{calculateRate(offer)}</p>
+                        <p className="text-xs text-muted-foreground">Rate</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{offer.amountRequested.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Points requested</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Seller</span>
+                        <span className="font-medium">{offer.createdBy === user?.id ? 'You' : `User #${offer.createdBy}`}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Expires</span>
+                        <span>{formatDate(offer.expiresAt)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Posted</span>
+                        <span>{formatDate(offer.createdAt)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setViewOfferDetails(offer)}
                     >
-                      {createTradeMutation.isPending ? 
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 
-                        'Create Offer'}
+                      View Details
                     </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <Tabs defaultValue="market">
-          <TabsList className="mb-6">
-            <TabsTrigger value="market">Trade Market</TabsTrigger>
-            <TabsTrigger value="my-offers">My Offers</TabsTrigger>
-            <TabsTrigger value="history">Trade History</TabsTrigger>
-          </TabsList>
-
-          {/* Market tab - shows all available trade offers */}
-          <TabsContent value="market">
-            {isLoadingOffers ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : tradeOffers.length === 0 ? (
-              <div className="text-center p-10 bg-muted rounded-md">
-                <h3 className="text-lg font-medium">No trade offers available</h3>
-                <p className="text-muted-foreground mt-2">
-                  Be the first to create a trade offer and set your own rate!
-                </p>
-                <Button className="mt-4" onClick={() => setCreateTradeOpen(true)}>
-                  Create Trade Offer
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {tradeOffers.map((offer) => (
-                  <Card key={offer.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">
-                            {offer.fromProgram} → {offer.toProgram}
-                          </CardTitle>
-                          <CardDescription>
-                            Offer by User #{offer.createdBy}
-                          </CardDescription>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="my-offers" className="py-4">
+          {myOffersData.isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : myOffersData.data?.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-md shadow-sm">
+              <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium mb-2">No Active Offers</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                You don't have any active trade offers. Create one to start trading!
+              </p>
+              <Button onClick={() => setCreateTradeOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Trade Offer
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {myOffersData.data?.map((offer) => (
+                <Card key={offer.id} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(offer.fromProgram)}`}>
+                          {offer.fromProgram.charAt(0)}
                         </div>
-                        <Badge variant="outline" className={`${getProgramColor(offer.fromProgram)}`}>
-                          {offer.fromProgram}
+                        <div>
+                          <p className="font-medium">{offer.fromProgram}</p>
+                          <p className="text-sm text-muted-foreground">Offering</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(offer.toProgram)}`}>
+                          {offer.toProgram.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{offer.toProgram}</p>
+                          <p className="text-sm text-muted-foreground">Requesting</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pb-3">
+                    <div className="flex justify-between text-center p-3 bg-muted/50 rounded-lg mb-3">
+                      <div>
+                        <p className="text-xl font-bold">{offer.amountOffered.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Points offered</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{calculateRate(offer)}</p>
+                        <p className="text-xs text-muted-foreground">Rate</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{offer.amountRequested.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Points requested</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge variant={offer.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                          {offer.status}
                         </Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Offering</p>
-                          <p className="text-lg font-semibold">{offer.amountOffered.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Requesting</p>
-                          <p className="text-lg font-semibold">{offer.amountRequested.toLocaleString()}</p>
-                        </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Expires</span>
+                        <span>{formatDate(offer.expiresAt)}</span>
                       </div>
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm text-muted-foreground">Custom Rate</p>
-                          <p className="font-medium">{parseFloat(offer.customRate).toFixed(4)}</p>
-                        </div>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm text-muted-foreground">Market Rate</p>
-                          <p className="font-medium">{parseFloat(offer.marketRate).toFixed(4)}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-muted-foreground">Savings</p>
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
-                            <TrendingDown className="h-3 w-3 mr-1" />
-                            {parseFloat(offer.savings).toFixed(2)}%
-                          </Badge>
-                        </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Posted</span>
+                        <span>{formatDate(offer.createdAt)}</span>
                       </div>
-                      {offer.description && (
-                        <p className="text-sm italic border-t pt-2 mt-2">
-                          "{offer.description}"
-                        </p>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => cancelTradeMutation.mutate(offer.id)}
+                      disabled={cancelTradeMutation.isPending || offer.status !== 'ACTIVE'}
+                    >
+                      {cancelTradeMutation.isPending ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Cancelling...</>
+                      ) : (
+                        <><X className="h-4 w-4 mr-2" /> Cancel Offer</>
                       )}
-                    </CardContent>
-                    <CardFooter className="pt-2 flex justify-between">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Expires {formatDate(offer.expiresAt)}
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => setViewOfferDetails(offer)}
-                      >
-                        View Details
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* My Offers tab - shows user's own trade offers */}
-          <TabsContent value="my-offers">
-            {isLoadingMyOffers ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : myOffers.length === 0 ? (
-              <div className="text-center p-10 bg-muted rounded-md">
-                <h3 className="text-lg font-medium">You haven't created any offers yet</h3>
-                <p className="text-muted-foreground mt-2">
-                  Create your first trade offer and set your own custom rate!
-                </p>
-                <Button className="mt-4" onClick={() => setCreateTradeOpen(true)}>
-                  Create Trade Offer
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {myOffers.map((offer) => (
-                  <Card key={offer.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">
-                          {offer.fromProgram} → {offer.toProgram}
-                        </CardTitle>
-                        <Badge 
-                          variant={offer.status === "open" ? "default" : "outline"}
-                          className={
-                            offer.status === "open" 
-                              ? "bg-green-100 text-green-700 hover:bg-green-200" 
-                              : "text-yellow-700 bg-yellow-100"
-                          }
-                        >
-                          {offer.status.toUpperCase()}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="history" className="py-4">
+          {tradeHistoryData.isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : tradeHistoryData.data?.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-md shadow-sm">
+              <History className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium mb-2">No Trade History</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                You haven't completed any trades yet. Browse the marketplace to find trades!
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-md shadow overflow-hidden">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Transaction
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Rate
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Partner
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tradeHistoryData.data?.map((trade) => (
+                    <tr key={trade.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {formatDate(trade.completedAt || new Date())}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center mr-2 ${getBadgeColor(trade.fromProgram)}`}>
+                            {trade.fromProgram.charAt(0)}
+                          </div>
+                          <ArrowRight className="h-4 w-4 mx-1" />
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center ml-1 ${getBadgeColor(trade.toProgram)}`}>
+                            {trade.toProgram.charAt(0)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div>
+                          <div className="font-medium">{trade.amountSent.toLocaleString()} points</div>
+                          <div className="text-xs text-muted-foreground">Sent</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        1:{(trade.amountReceived / trade.amountSent).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        User #{trade.tradedWithUserId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Completed
                         </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Offering</p>
-                          <p className="text-lg font-semibold">{offer.amountOffered.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Requesting</p>
-                          <p className="text-lg font-semibold">{offer.amountRequested.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm text-muted-foreground">Custom Rate</p>
-                          <p className="font-medium">{parseFloat(offer.customRate).toFixed(4)}</p>
-                        </div>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm text-muted-foreground">Market Rate</p>
-                          <p className="font-medium">{parseFloat(offer.marketRate).toFixed(4)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-2 flex justify-between">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Expires {formatDate(offer.expiresAt)}
-                      </div>
-                      {offer.status === "open" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => cancelTradeMutation.mutate(offer.id)}
-                          disabled={cancelTradeMutation.isPending}
-                        >
-                          {cancelTradeMutation.isPending ? 
-                            <Loader2 className="h-3 w-3 animate-spin" /> : 
-                            'Cancel'}
-                        </Button>
-                      )}
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* History tab - shows completed trades */}
-          <TabsContent value="history">
-            {isLoadingHistory ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : tradeHistory.length === 0 ? (
-              <div className="text-center p-10 bg-muted rounded-md">
-                <h3 className="text-lg font-medium">No trade history yet</h3>
-                <p className="text-muted-foreground mt-2">
-                  Your completed trades will appear here.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-md shadow overflow-hidden">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Transaction
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Fees
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Status
-                      </th>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {tradeHistory.map((trade) => (
-                      <tr key={trade.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {formatDate(trade.completedAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {trade.sellerId === user?.id ? 
-                            <span>Sold to User #{trade.buyerId}</span> : 
-                            <span>Bought from User #{trade.sellerId}</span>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {trade.sellerId === user?.id ? 
-                            <span>{trade.amountSold.toLocaleString()} → {trade.amountBought.toLocaleString()}</span> : 
-                            <span>{trade.amountBought.toLocaleString()} ← {trade.amountSold.toLocaleString()}</span>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {parseFloat(trade.rate).toFixed(4)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {trade.sellerId === user?.id ? (
-                            <span className="text-amber-600">
-                              {Number(trade.sellerFee) > 0 ? 
-                                `${Number(trade.sellerFee).toFixed(2)} points` : 
-                                "No fee"}
-                            </span>
-                          ) : (
-                            <span className="text-amber-600">
-                              {Number(trade.buyerFee) > 0 ? 
-                                `${Number(trade.buyerFee).toFixed(2)} points` : 
-                                "No fee"}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <Badge 
-                            variant="outline"
-                            className={
-                              trade.status === "completed" 
-                                ? "bg-green-100 text-green-700" 
-                                : "bg-yellow-100 text-yellow-700"
-                            }
-                          >
-                            {trade.status === "completed" ? 
-                              <Check className="h-3 w-3 mr-1" /> : 
-                              <Clock className="h-3 w-3 mr-1" />}
-                            {trade.status.toUpperCase()}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Create Trade Dialog */}
+      <Dialog open={createTradeOpen} onOpenChange={setCreateTradeOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Trade Offer</DialogTitle>
+            <DialogDescription>
+              Set up your trade offer to exchange points with other users.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={form.handleSubmit((data) => createTradeMutation.mutate(data))}>
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium mb-1">You Offer</h4>
+                  <Select
+                    defaultValue={form.watch('fromProgram')}
+                    onValueChange={(value) => form.setValue('fromProgram', value as any)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="QANTAS">Qantas</SelectItem>
+                      <SelectItem value="GYG">GYG</SelectItem>
+                      <SelectItem value="XPOINTS">xPoints</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <ArrowRight className="mx-4 text-gray-400" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium mb-1">You Want</h4>
+                  <Select
+                    defaultValue={form.watch('toProgram')}
+                    onValueChange={(value) => form.setValue('toProgram', value as any)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="QANTAS">Qantas</SelectItem>
+                      <SelectItem value="GYG">GYG</SelectItem>
+                      <SelectItem value="XPOINTS">xPoints</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium mb-1">Amount to Offer</h4>
+                  <Input
+                    type="number"
+                    placeholder="Amount"
+                    {...form.register('amountOffered', { valueAsNumber: true })}
+                  />
+                </div>
+                <div className="mx-4 text-xs text-gray-500">
+                  {form.watch('amountRequested') && form.watch('amountOffered') ?
+                    `Rate: 1:${(form.watch('amountRequested') / form.watch('amountOffered')).toFixed(2)}` :
+                    'Set both amounts'
+                  }
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium mb-1">Amount to Receive</h4>
+                  <Input
+                    type="number"
+                    placeholder="Amount"
+                    {...form.register('amountRequested', { valueAsNumber: true })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-1">Your Balance</h4>
+                <div className="bg-muted p-3 rounded-md">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${getBadgeColor(form.watch('fromProgram'))}`}>
+                        {form.watch('fromProgram')?.charAt(0)}
+                      </div>
+                      <span className="font-medium">{form.watch('fromProgram')}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold">{getWalletBalance(form.watch('fromProgram')).toLocaleString()}</span> points
+                    </div>
+                  </div>
+                </div>
+                {getWalletBalance(form.watch('fromProgram')) < form.watch('amountOffered') && (
+                  <p className="text-sm text-red-500 mt-2">
+                    You don't have enough points to create this offer.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-1">Description (Optional)</h4>
+                <textarea
+                  className="w-full rounded-md border border-border p-2 text-sm"
+                  placeholder="Add any details about your trade offer"
+                  {...form.register('description')}
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-1">Expires In</h4>
+                <Select
+                  defaultValue="7days"
+                  onValueChange={(value) => {
+                    const now = new Date();
+                    let expiryDate = new Date();
+                    
+                    if (value === '1day') expiryDate.setDate(now.getDate() + 1);
+                    if (value === '3days') expiryDate.setDate(now.getDate() + 3);
+                    if (value === '7days') expiryDate.setDate(now.getDate() + 7);
+                    if (value === '14days') expiryDate.setDate(now.getDate() + 14);
+                    if (value === '30days') expiryDate.setDate(now.getDate() + 30);
+                    
+                    form.setValue('expiresAt', expiryDate);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select expiry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1day">24 hours</SelectItem>
+                    <SelectItem value="3days">3 days</SelectItem>
+                    <SelectItem value="7days">7 days</SelectItem>
+                    <SelectItem value="14days">14 days</SelectItem>
+                    <SelectItem value="30days">30 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreateTradeOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={
+                  createTradeMutation.isPending || 
+                  getWalletBalance(form.watch('fromProgram')) < form.watch('amountOffered') ||
+                  form.watch('fromProgram') === form.watch('toProgram')
+                }
+              >
+                {createTradeMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</>
+                ) : (
+                  'Create Offer'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* View Offer Details Dialog */}
       {viewOfferDetails && (
@@ -686,69 +737,78 @@ export default function TradingPage() {
             <DialogHeader>
               <DialogTitle>Trade Offer Details</DialogTitle>
               <DialogDescription>
-                Review this trade offer from User #{viewOfferDetails.createdBy}
+                Review the details of this trade offer before accepting.
               </DialogDescription>
             </DialogHeader>
+            
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {viewOfferDetails.fromProgram} → {viewOfferDetails.toProgram}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Created {formatDate(viewOfferDetails.createdAt)}
-                  </p>
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(viewOfferDetails.fromProgram)}`}>
+                      {viewOfferDetails.fromProgram.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium">{viewOfferDetails.fromProgram}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {viewOfferDetails.amountOffered.toLocaleString()} points
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-background rounded-full p-2 shadow-sm">
+                    <ArrowRight className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${getBadgeColor(viewOfferDetails.toProgram)}`}>
+                      {viewOfferDetails.toProgram.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium">{viewOfferDetails.toProgram}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {viewOfferDetails.amountRequested.toLocaleString()} points
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Badge 
-                  variant="outline" 
-                  className={`${getProgramColor(viewOfferDetails.fromProgram)}`}
-                >
-                  {viewOfferDetails.fromProgram}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 bg-muted p-4 rounded-md">
-                <div>
-                  <p className="text-sm text-muted-foreground">Offering</p>
-                  <p className="text-2xl font-bold">{viewOfferDetails.amountOffered.toLocaleString()}</p>
-                  <p className="text-sm">{viewOfferDetails.fromProgram} points</p>
+                
+                <div className="bg-background rounded-md p-3 mb-3">
+                  <div className="flex justify-between text-center">
+                    <div>
+                      <p className="text-xl font-bold">{viewOfferDetails.amountOffered.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Points offered</p>
+                    </div>
+                    <Separator orientation="vertical" className="mx-2" />
+                    <div>
+                      <p className="text-xl font-bold">1:{(viewOfferDetails.amountRequested / viewOfferDetails.amountOffered).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">Exchange rate</p>
+                    </div>
+                    <Separator orientation="vertical" className="mx-2" />
+                    <div>
+                      <p className="text-xl font-bold">{viewOfferDetails.amountRequested.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Points requested</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Requesting</p>
-                  <p className="text-2xl font-bold">{viewOfferDetails.amountRequested.toLocaleString()}</p>
-                  <p className="text-sm">{viewOfferDetails.toProgram} points</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 border-t border-b py-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Custom Rate</span>
-                  <span className="font-medium">{parseFloat(viewOfferDetails.customRate).toFixed(4)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Market Rate</span>
-                  <span className="font-medium">{parseFloat(viewOfferDetails.marketRate).toFixed(4)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Your Savings</span>
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                    {parseFloat(viewOfferDetails.savings).toFixed(2)}%
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Platform Fee</span>
-                  <span className="text-amber-600">
-                    {/* Calculate estimated fee (10% of savings, max 3%) */}
-                    {Math.min(
-                      Math.max(parseFloat(viewOfferDetails.savings) * 0.1, 0.5), 
-                      3
-                    ).toFixed(2)}% of trade
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expires</span>
-                  <span>{formatDate(viewOfferDetails.expiresAt)}</span>
+                
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Seller</span>
+                    <span className="font-medium">{viewOfferDetails.createdBy === user?.id ? 'You' : `User #${viewOfferDetails.createdBy}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant={viewOfferDetails.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                      {viewOfferDetails.status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Created</span>
+                    <span>{formatDate(viewOfferDetails.createdAt)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Expires</span>
+                    <span>{formatDate(viewOfferDetails.expiresAt)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -760,17 +820,25 @@ export default function TradingPage() {
                   </p>
                 </div>
               )}
-
-              <div className="bg-yellow-50 p-3 rounded-md">
-                <h4 className="text-sm font-medium flex items-center text-yellow-800">
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Your Available Balance
-                </h4>
-                <p className="text-sm mt-1">
-                  You have <span className="font-semibold">{getWalletBalance(viewOfferDetails.toProgram).toLocaleString()}</span> {viewOfferDetails.toProgram} points available.
-                </p>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-1">Your Points Balance:</h4>
+                <div className="bg-muted p-3 rounded-md">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${getBadgeColor(viewOfferDetails.toProgram)}`}>
+                        {viewOfferDetails.toProgram.charAt(0)}
+                      </div>
+                      <span className="font-medium">{viewOfferDetails.toProgram}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold">{getWalletBalance(viewOfferDetails.toProgram).toLocaleString()}</span> points
+                    </div>
+                  </div>
+                </div>
+                
                 {getWalletBalance(viewOfferDetails.toProgram) < viewOfferDetails.amountRequested && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-sm text-red-500 mt-2">
                     You don't have enough points to complete this trade.
                   </p>
                 )}
@@ -798,6 +866,6 @@ export default function TradingPage() {
           </DialogContent>
         </Dialog>
       )}
-    </MainLayout>
+    </div>
   );
 }

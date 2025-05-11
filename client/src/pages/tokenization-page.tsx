@@ -37,9 +37,8 @@ export default function TokenizationPage() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">xPoints Tokenization</h1>
           <Button variant="outline" className="flex items-center gap-2">
             <ArrowDownToLine className="h-4 w-4" />
@@ -269,6 +268,5 @@ export default function TokenizationPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
   );
 }

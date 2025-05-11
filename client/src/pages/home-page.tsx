@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
-import MainLayout from '@/components/layout/MainLayout';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
 import MembershipTierCard from '@/components/dashboard/MembershipTierCard';
 import ConversionForm from '@/components/transaction/ConversionForm';
@@ -11,20 +10,21 @@ import ConnectedAccounts from '@/components/account/ConnectedAccounts';
 import MobileHomePage from '@/components/mobile/MobileHomePage';
 import PointsTranslator from '@/components/PointsTranslator';
 import { useQuery } from '@tanstack/react-query';
+import { Wallet } from '@shared/schema';
 
 export default function HomePage() {
   const { user } = useAuth();
   const { useMobileLayout } = usePreferredLayout();
   
   // Fetch user wallets for the points translator
-  const { data: wallets } = useQuery({
+  const { data: wallets = [] } = useQuery<Wallet[]>({
     queryKey: ['/api/wallets'],
     enabled: !!user,
   });
   
   // Get the highest balance wallet for the Points Translator
-  const primaryWallet = wallets?.length ? 
-    wallets.reduce((highest, current) => 
+  const primaryWallet = wallets.length > 0 ? 
+    wallets.reduce((highest: Wallet, current: Wallet) => 
       current.balance > highest.balance ? current : highest
     ) : null;
 
