@@ -1,6 +1,6 @@
 import * as schema from "@shared/schema";
 import { 
-  users, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
+  users, transactions, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
   type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData,
   type TradeOffer, type TradeTransaction
@@ -78,19 +78,48 @@ export class DatabaseStorage implements IStorage {
   sessionStore: SessionStore;
 
   constructor() {
-    // Initialize session store with PostgreSQL
-    this.sessionStore = new PostgresSessionStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
-      createTableIfMissing: true
-    });
-    
-    // Set up initial exchange rates if they don't exist
-    this.initializeExchangeRates();
-    
-    // Set up initial tier benefits if they don't exist
-    this.initializeTierBenefits();
+    try {
+      // Log connection attempt
+      console.log("Initializing database connection for session store and storage services");
+      
+      if (!process.env.DATABASE_URL) {
+        throw new Error("DATABASE_URL environment variable is not set");
+      }
+      
+      // Initialize session store with PostgreSQL
+      this.sessionStore = new PostgresSessionStore({
+        conObject: {
+          connectionString: process.env.DATABASE_URL,
+        },
+        createTableIfMissing: true
+      });
+      
+      // Set up initial data in background without blocking startup
+      Promise.all([
+        // Initialize exchange rates
+        this.initializeExchangeRates().catch(err => {
+          console.error('Non-critical error initializing exchange rates:', err);
+        }),
+        
+        // Initialize tier benefits
+        this.initializeTierBenefits().catch(err => {
+          console.error('Non-critical error initializing tier benefits:', err);
+        })
+      ]).then(() => {
+        console.log("Database initialization completed successfully");
+      }).catch(err => {
+        console.error("Database initialization encountered errors:", err);
+      });
+      
+    } catch (error) {
+      console.error('Critical error in database initialization:', error);
+      
+      // Fall back to memory store for better resilience
+      console.warn('⚠️ Using fallback in-memory session store');
+      this.sessionStore = new MemoryStore({
+        checkPeriod: 86400000 // Prune expired entries every 24h
+      });
+    }
   }
   
   // Blockchain wallet management methods
@@ -949,6 +978,33 @@ export class DatabaseStorage implements IStorage {
     
     return transaction;
   }
+  
+  async getAllUserTokenBalances(): Promise<{ id: number, tokenBalance: number | null }[]> {
+    try {
+      const results = await db.select({
+        id: users.id,
+        tokenBalance: users.tokenBalance
+      }).from(users);
+      return results;
+    } catch (error) {
+      console.error("Error getting all user token balances:", error);
+      return [];
+    }
+  }
+  
+  async getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]> {
+    try {
+      return await db.select().from(transactions)
+        .where(and(
+          eq(transactions.fromProgram, fromProgram),
+          eq(transactions.toProgram, toProgram),
+          eq(transactions.status, "completed")
+        ));
+    } catch (error) {
+      console.error(`Error getting conversion transactions from ${fromProgram} to ${toProgram}:`, error);
+      return [];
+    }
+  }
 }
 
 // In-memory storage implementation - keeping for reference but not using
@@ -1242,6 +1298,27 @@ export class MemStorage implements IStorage {
   
   async createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction> {
     throw new Error("Not implemented in MemStorage");
+  }
+  
+  async getAllUserTokenBalances(): Promise<{ id: number, tokenBalance: number | null }[]> {
+    const result: { id: number, tokenBalance: number | null }[] = [];
+    this.users.forEach((user) => {
+      result.push({
+        id: user.id,
+        tokenBalance: user.tokenBalance || null
+      });
+    });
+    return result;
+  }
+  
+  async getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]> {
+    const result: Transaction[] = [];
+    this.transactions.forEach((tx) => {
+      if (tx.fromProgram === fromProgram && tx.toProgram === toProgram && tx.status === 'completed') {
+        result.push(tx);
+      }
+    });
+    return result;
   }
 }
 
