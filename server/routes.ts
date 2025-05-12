@@ -245,7 +245,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amountFrom: data.amount,
         amountTo,
         feeApplied,
-        status: "completed"
+        status: "completed",
+        recipientId: null,
+        transactionHash: null,
+        blockNumber: 0,
+        contractAddress: null,
+        tokenAddress: null
       });
       
       res.status(200).json({

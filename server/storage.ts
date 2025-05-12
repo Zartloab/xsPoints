@@ -92,25 +92,25 @@ export class DatabaseStorage implements IStorage {
   // Blockchain wallet management methods
   async updateUserWallet(userId: number, walletAddress: string, walletPrivateKey: string): Promise<User> {
     const [updatedUser] = await db
-      .update(users)
+      .update(schema.users)
       .set({
         walletAddress,
         walletPrivateKey,
         tokenLedgerSynced: new Date()
       })
-      .where(eq(users.id, userId))
+      .where(eq(schema.users.id, userId))
       .returning();
     return updatedUser;
   }
   
   async updateTokenBalance(userId: number, balance: number): Promise<User> {
     const [updatedUser] = await db
-      .update(users)
+      .update(schema.users)
       .set({
         tokenBalance: balance,
         tokenLedgerSynced: new Date()
       })
-      .where(eq(users.id, userId))
+      .where(eq(schema.users.id, userId))
       .returning();
     return updatedUser;
   }
@@ -118,8 +118,8 @@ export class DatabaseStorage implements IStorage {
   async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
     const [user] = await db
       .select()
-      .from(users)
-      .where(eq(users.walletAddress, walletAddress));
+      .from(schema.users)
+      .where(eq(schema.users.walletAddress, walletAddress));
     return user || undefined;
   }
 
@@ -953,6 +953,44 @@ export class MemStorage implements IStorage {
   currentTransactionId: number;
   currentExchangeRateId: number;
   sessionStore: SessionStore;
+  
+  // Blockchain wallet management methods
+  async updateUserWallet(userId: number, walletAddress: string, walletPrivateKey: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const updatedUser = {
+      ...user,
+      walletAddress,
+      walletPrivateKey,
+      tokenLedgerSynced: new Date()
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateTokenBalance(userId: number, balance: number): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const updatedUser = {
+      ...user,
+      tokenBalance: balance,
+      tokenLedgerSynced: new Date()
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.walletAddress === walletAddress);
+  }
 
   constructor() {
     this.users = new Map();
