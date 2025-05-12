@@ -356,31 +356,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
-      // For now, just create a transaction to represent the tokenization
-      // Later, we'll create a token_ledger entry
-      const transaction = await storage.createTransaction({
-        userId: req.user!.id,
-        fromProgram: data.program,
-        toProgram: data.program,
-        amountFrom: data.amount,
-        amountTo: data.amount,
-        feeApplied: 0,
-        status: "tokenized",
-        recipientId: 0,
-        transactionHash: "",
-        blockNumber: 0,
-        contractAddress: "",
-        tokenAddress: ""
-      });
+      // Use the token service to mint tokens
+      const success = await tokenService.mintTokens(
+        req.user!.id,
+        data.program,
+        data.amount
+      );
       
-      // Update wallet balance
-      await storage.updateWalletBalance(wallet.id, wallet.balance - data.amount);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to mint tokens" });
+      }
+      
+      // Get updated wallet balances
+      const updatedWallet = await storage.getWallet(req.user!.id, data.program);
+      const xPointsWallet = await storage.getWallet(req.user!.id, "XPOINTS");
+      
+      // Get blockchain wallet address
+      const walletAddress = await tokenService.getUserWalletAddress(req.user!.id);
       
       res.status(200).json({
-        transaction,
-        newBalance: wallet.balance - data.amount,
-        tokenId: `TOK${Date.now()}${req.user!.id}`,
-        status: "minted"
+        success: true,
+        blockchain: {
+          walletAddress,
+          tokenBalance: xPointsWallet?.balance || 0
+        },
+        sourceWallet: {
+          program: data.program,
+          balance: updatedWallet?.balance || 0
+        }
       });
     } catch (error) {
       console.error("Error tokenizing points:", error);
@@ -390,6 +393,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to tokenize points" });
+    }
+  });
+  
+  // API endpoint for getting blockchain wallet info
+  app.get("/api/blockchain-wallet", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Get or create wallet address for the user
+      const walletAddress = await tokenService.getUserWalletAddress(req.user!.id);
+      const tokenBalance = await tokenService.getUserBalance(req.user!.id);
+      
+      // Get token stats
+      const totalSupply = await tokenService.getTotalSupply();
+      const supportedPrograms = await tokenService.getSupportedPrograms();
+      
+      // Get reserves for each program
+      const reserves = await Promise.all(
+        supportedPrograms.map(async (program) => {
+          const balance = await tokenService.getLoyaltyPointsReserve(program);
+          return { program, balance };
+        })
+      );
+      
+      res.status(200).json({
+        wallet: {
+          address: walletAddress,
+          balance: tokenBalance
+        },
+        token: {
+          totalSupply,
+          reserves
+        }
+      });
+    } catch (error) {
+      console.error("Error getting blockchain wallet:", error);
+      res.status(500).json({ message: "Error retrieving blockchain wallet information" });
+    }
+  });
+  
+  // API endpoint for converting tokens back to loyalty points
+  app.post("/api/detokenize", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Validate request body
+      const data = z.object({
+        program: z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"]),
+        amount: z.number().positive()
+      }).parse(req.body);
+      
+      // Get user's XPOINTS wallet
+      const xpointsWallet = await storage.getWallet(req.user!.id, "XPOINTS");
+      if (!xpointsWallet) {
+        return res.status(404).json({ message: "XPOINTS wallet not found" });
+      }
+      
+      // Check if user has enough tokens
+      if (xpointsWallet.balance < data.amount) {
+        return res.status(400).json({ message: "Insufficient token balance" });
+      }
+      
+      // Get destination wallet (or create it if it doesn't exist)
+      let targetWallet = await storage.getWallet(req.user!.id, data.program);
+      if (!targetWallet) {
+        targetWallet = await storage.createWallet({
+          userId: req.user!.id,
+          program: data.program,
+          balance: 0,
+          accountNumber: null,
+          accountName: null
+        });
+      }
+      
+      // Use the token service to burn tokens and convert back to loyalty points
+      const success = await tokenService.burnTokens(
+        req.user!.id,
+        data.program,
+        data.amount
+      );
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to convert tokens to loyalty points" });
+      }
+      
+      // Get updated wallet balances
+      const updatedXpointsWallet = await storage.getWallet(req.user!.id, "XPOINTS");
+      const updatedTargetWallet = await storage.getWallet(req.user!.id, data.program);
+      
+      res.status(200).json({
+        success: true,
+        xpointsWallet: {
+          program: "XPOINTS",
+          balance: updatedXpointsWallet?.balance || 0
+        },
+        targetWallet: {
+          program: data.program,
+          balance: updatedTargetWallet?.balance || 0
+        }
+      });
+    } catch (error) {
+      console.error("Error converting tokens to loyalty points:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ message: "Failed to convert tokens to loyalty points" });
     }
   });
 
