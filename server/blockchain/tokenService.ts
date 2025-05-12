@@ -66,18 +66,18 @@ export class TokenService {
    */
   private setupEventListeners() {
     // Listen for token transfers
-    this.contract.on("Transfer", (from, to, value) => {
+    this.contract.on("Transfer", (from: string, to: string, value: bigint) => {
       console.log(`Transfer: ${from} -> ${to}: ${value}`);
       // You could add logic here to update user balances in your database
     });
     
     // Listen for loyalty points deposits
-    this.contract.on("LoyaltyPointsDeposited", (program, amount) => {
+    this.contract.on("LoyaltyPointsDeposited", (program: string, amount: bigint) => {
       console.log(`Deposited: ${amount} points for ${program}`);
     });
     
     // Listen for loyalty points withdrawals
-    this.contract.on("LoyaltyPointsWithdrawn", (program, amount) => {
+    this.contract.on("LoyaltyPointsWithdrawn", (program: string, amount: bigint) => {
       console.log(`Withdrawn: ${amount} points from ${program}`);
     });
   }
@@ -177,10 +177,15 @@ export class TokenService {
         userId,
         fromProgram: loyaltyProgram,
         toProgram: 'XPOINTS',
-        fromAmount: amount,
-        toAmount: tokenAmount,
-        fee: 0,
-        status: 'COMPLETED'
+        amountFrom: amount,
+        amountTo: tokenAmount,
+        feeApplied: 0,
+        status: 'completed',
+        recipientId: null,
+        transactionHash: tx.hash, 
+        blockNumber: (await tx.wait()).blockNumber || 0,
+        contractAddress: BLOCKCHAIN_CONFIG.tokenContractAddress,
+        tokenAddress: BLOCKCHAIN_CONFIG.tokenContractAddress
       });
       
       return true;
@@ -253,10 +258,15 @@ export class TokenService {
         userId,
         fromProgram: 'XPOINTS',
         toProgram: targetProgram,
-        fromAmount: tokenAmount,
-        toAmount: loyaltyAmount,
-        fee: 0,
-        status: 'COMPLETED'
+        amountFrom: tokenAmount,
+        amountTo: loyaltyAmount,
+        feeApplied: 0,
+        status: 'completed',
+        recipientId: null,
+        transactionHash: tx.hash, 
+        blockNumber: (await tx.wait()).blockNumber || 0,
+        contractAddress: BLOCKCHAIN_CONFIG.tokenContractAddress,
+        tokenAddress: BLOCKCHAIN_CONFIG.tokenContractAddress
       });
       
       return true;

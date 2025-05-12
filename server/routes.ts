@@ -364,7 +364,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amountFrom: data.amount,
         amountTo: data.amount,
         feeApplied: 0,
-        status: "tokenized"
+        status: "tokenized",
+        recipientId: null,
+        transactionHash: null,
+        blockNumber: 0,
+        contractAddress: null,
+        tokenAddress: null
       });
       
       // Update wallet balance
