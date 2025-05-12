@@ -1092,6 +1092,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API documentation
   app.use('/api/docs', docsRouter);
   
+  // ===== AI RECOMMENDATION ENGINE =====
+  
+  // Get personalized points recommendations
+  app.get("/api/recommendations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const recommendations = await recommendationService.getUserRecommendations(req.user!.id);
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+      res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
