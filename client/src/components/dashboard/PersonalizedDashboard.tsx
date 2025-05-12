@@ -150,8 +150,8 @@ export default function PersonalizedDashboard() {
       });
     }
     
-    // Suggest trying out trading if they haven't yet
-    if (!transactions.some(t => t.status === 'TRADE')) {
+    // Suggest trying out trading if they have fewer than 2 transactions
+    if (transactions.length < 2) {
       opportunities.push({
         title: 'Try P2P Trading',
         description: 'Trade directly with other users for better rates',
@@ -333,7 +333,7 @@ export default function PersonalizedDashboard() {
               action={opportunity.action}
               onClick={opportunity.onClick}
               badgeText={opportunity.badgeText}
-              badgeVariant={opportunity.badgeVariant}
+              badgeVariant={opportunity.badgeVariant as "default" | "secondary" | "destructive" | "outline"}
             />
           ))}
         </div>

@@ -3,7 +3,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
 import MembershipTierCard from '@/components/dashboard/MembershipTierCard';
+import PersonalizedDashboard from '@/components/dashboard/PersonalizedDashboard';
 import ConversionForm from '@/components/transaction/ConversionForm';
+import ConversionWizard from '@/components/transaction/ConversionWizard';
 import TransactionHistory from '@/components/transaction/TransactionHistory';
 import LinkAccountForm from '@/components/account/LinkAccountForm';
 import ConnectedAccounts from '@/components/account/ConnectedAccounts';
@@ -36,15 +38,19 @@ export default function HomePage() {
   // Desktop layout
   return (
     <>
+      {/* New Personalized Dashboard */}
+      <PersonalizedDashboard />
+      
       <DashboardWallets />
       
       <div className="mb-8">
         <MembershipTierCard />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
+      <div id="convert" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-6">
           <ConversionForm />
+          <ConversionWizard />
         </div>
         <div>
           {primaryWallet && (
