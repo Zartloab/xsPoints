@@ -364,13 +364,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWallet(userId: number, program: LoyaltyProgram): Promise<Wallet | undefined> {
-    const [wallet] = await db.select().from(schema.wallets).where(
-      and(
-        eq(schema.wallets.userId, userId),
-        eq(schema.wallets.program, program)
+    // Get all wallets for this user and program, ordered by balance (descending)
+    // so if there are duplicate wallets, we get the one with the highest balance
+    const wallets = await db.select().from(schema.wallets)
+      .where(
+        and(
+          eq(schema.wallets.userId, userId),
+          eq(schema.wallets.program, program)
+        )
       )
-    );
-    return wallet;
+      .orderBy(desc(schema.wallets.balance), desc(schema.wallets.id));
+    
+    return wallets[0]; // Return the wallet with highest balance or most recently created
   }
 
   async createWallet(wallet: Omit<Wallet, "id" | "createdAt">): Promise<Wallet> {
