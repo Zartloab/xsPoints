@@ -61,7 +61,7 @@ export default function TokenizationPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedProgram, setSelectedProgram] = useState<string>("");
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number | ''>('');
 
   // Fetch blockchain wallet data using TanStack Query v5
   const { 
@@ -91,9 +91,10 @@ export default function TokenizationPage() {
       return res.json();
     },
     onSuccess: () => {
+      const amountToShow = typeof amount === 'number' ? amount : 0;
       toast({
-        title: "Points Tokenized",
-        description: `Successfully converted ${amount} ${selectedProgram} points to xTokens.`,
+        title: "Points Converted",
+        description: `Successfully converted ${amountToShow} ${selectedProgram} points to xPoints.`,
       });
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/blockchain-wallet'] });
@@ -101,11 +102,11 @@ export default function TokenizationPage() {
       
       // Reset form
       setSelectedProgram("");
-      setAmount(0);
+      setAmount('');
     },
     onError: (error: Error) => {
       toast({
-        title: "Tokenization Failed",
+        title: "Conversion Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -130,16 +131,19 @@ export default function TokenizationPage() {
       return;
     }
     
-    if (!amount || amount <= 0) {
+    if (amount === '' || typeof amount === 'number' && amount <= 0) {
       toast({
         title: "Invalid Amount",
-        description: "Please enter a positive amount to tokenize.",
+        description: "Please enter a positive amount to convert.",
         variant: "destructive",
       });
       return;
     }
     
-    if (selectedWallet && selectedWallet.balance < amount) {
+    // Convert amount to number for API call
+    const amountValue = typeof amount === 'number' ? amount : 0;
+    
+    if (selectedWallet && typeof amount === 'number' && selectedWallet.balance < amount) {
       toast({
         title: "Insufficient Balance",
         description: `You only have ${selectedWallet.balance} points available in your ${selectedProgram} wallet.`,
@@ -150,7 +154,7 @@ export default function TokenizationPage() {
     
     tokenizeMutation.mutate({
       program: selectedProgram,
-      amount
+      amount: amountValue
     });
   };
 
@@ -308,7 +312,7 @@ export default function TokenizationPage() {
 
       {/* Tokenization Form */}
       <div className="bg-white rounded-md border p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Tokenize Your Loyalty Points</h2>
+        <h2 className="text-xl font-semibold mb-4">Convert Loyalty Points to xPoints</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <form className="space-y-4" onSubmit={handleTokenize}>
@@ -341,8 +345,8 @@ export default function TokenizationPage() {
                   type="number" 
                   className="w-full rounded-md border border-gray-300 px-3 py-2"
                   placeholder="Enter amount" 
-                  value={amount || ""}
-                  onChange={(e) => setAmount(Number(e.target.value))}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   min={1}
                   max={selectedWallet?.balance || 0}
                 />
@@ -355,7 +359,7 @@ export default function TokenizationPage() {
                 <Button 
                   className="w-full" 
                   type="submit"
-                  disabled={tokenizeMutation.isPending || !selectedProgram || !amount || amount <= 0}
+                  disabled={tokenizeMutation.isPending || !selectedProgram || amount === '' || (typeof amount === 'number' && amount <= 0)}
                 >
                   {tokenizeMutation.isPending ? (
                     <>
@@ -365,7 +369,7 @@ export default function TokenizationPage() {
                   ) : (
                     <>
                       <Coins className="h-4 w-4 mr-2" />
-                      Tokenize Points
+                      Convert to xPoints
                     </>
                   )}
                 </Button>
