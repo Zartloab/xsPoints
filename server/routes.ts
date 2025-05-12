@@ -125,6 +125,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch exchange rate" });
     }
   });
+  
+  // Get all exchange rates
+  app.get("/api/exchange-rates/all", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // This endpoint would typically return all exchange rates from the database
+      // Since we don't have a direct method to get all at once, we'll return a curated list
+      // of the most important rates
+      
+      const programs = ["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", 
+                        "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"];
+      
+      // Get a subset of rates that would be most relevant to the user
+      const rates = [];
+      for (const from of programs.slice(0, 3)) {
+        for (const to of programs.slice(0, 3)) {
+          if (from !== to) {
+            try {
+              const rate = await storage.getExchangeRate(
+                from as any, 
+                to as any
+              );
+              if (rate) {
+                rates.push(rate);
+              }
+            } catch (err) {
+              // Skip any rate we can't get
+              console.error(`Error fetching rate from ${from} to ${to}:`, err);
+            }
+          }
+        }
+      }
+      
+      res.json(rates);
+    } catch (error) {
+      console.error("Error fetching all exchange rates:", error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
 
   // Convert points between programs
   app.post("/api/convert", async (req, res) => {
