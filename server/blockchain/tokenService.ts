@@ -4,7 +4,7 @@ import { Transaction, LoyaltyProgram } from '@shared/schema';
 
 // Configuration for blockchain
 const BLOCKCHAIN_CONFIG = {
-  rpcUrl: process.env.BLOCKCHAIN_RPC_URL || 'https://polygon-mumbai.infura.io/v3/your-infura-key',
+  rpcUrl: process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545', // Local fallback
   adminPrivateKey: process.env.ADMIN_PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000',
   tokenContractAddress: process.env.TOKEN_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000'
 };

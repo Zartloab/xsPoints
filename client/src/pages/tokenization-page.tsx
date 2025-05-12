@@ -20,9 +20,12 @@ import {
   RefreshCw,
   CheckCircle,
   Globe,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useState } from 'react';
 
 // Define interfaces for the blockchain wallet data
 interface WalletInfo {
@@ -209,6 +212,69 @@ export default function TokenizationPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Tokenization Form */}
+      <div className="bg-white rounded-md border p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Tokenize Your Loyalty Points</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Loyalty Program</label>
+                <select 
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  defaultValue=""
+                >
+                  <option value="" disabled>Choose a program</option>
+                  <option value="QANTAS">Qantas Frequent Flyer</option>
+                  <option value="GYG">Guzman y Gomez</option>
+                  <option value="VELOCITY">Velocity Frequent Flyer</option>
+                  <option value="AMEX">American Express</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount to Tokenize</label>
+                <input 
+                  type="number" 
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  placeholder="Enter amount" 
+                />
+                <p className="text-xs text-gray-500 mt-1">Available: 5,000 points</p>
+              </div>
+              
+              <div className="pt-2">
+                <Button className="w-full">
+                  <Coins className="h-4 w-4 mr-2" />
+                  Tokenize Points
+                </Button>
+              </div>
+            </form>
+          </div>
+          
+          <div className="bg-blue-50 rounded-md p-5">
+            <h3 className="font-medium text-blue-800 mb-3">Tokenization Benefits</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <span className="text-sm">Convert between loyalty programs at better rates</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <span className="text-sm">Store value in a universal currency</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <span className="text-sm">Trade with other users in the marketplace</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <span className="text-sm">Earn bonus points through staking (coming soon)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="ledger" className="mt-8">
