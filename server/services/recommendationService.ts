@@ -1,9 +1,6 @@
-import OpenAI from "openai";
 import { storage } from "../storage";
 import { Transaction, User, Wallet } from "@shared/schema";
-
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { openaiService } from "./openaiService";
 
 // Types for recommendation responses
 export interface ProgramRecommendation {
