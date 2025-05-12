@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { Home, Repeat, Wallet, User, BarChart3, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ThemeToggle from '@/components/theme/ThemeToggle';
 
 type MobileLayoutProps = {
   children: React.ReactNode;
@@ -28,8 +27,6 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <div className="font-bold text-xl text-primary">xPoints</div>
           </div>
           <div className="flex items-center space-x-2">
-            <ThemeToggle />
-            
             <button className="p-2 rounded-full hover:bg-muted">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

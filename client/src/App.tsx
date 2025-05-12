@@ -19,7 +19,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 function Router() {
   const { useMobileLayout } = usePreferredLayout();
@@ -71,15 +70,13 @@ function LayoutToggle() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <LayoutToggle />
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+          <LayoutToggle />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
