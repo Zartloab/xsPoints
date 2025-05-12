@@ -356,35 +356,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
-      // Use the token service to mint tokens
-      const success = await tokenService.mintTokens(
-        req.user!.id,
-        data.program,
-        data.amount
-      );
-      
-      if (!success) {
-        return res.status(500).json({ message: "Failed to mint tokens" });
+      try {
+        // Use the token service to mint tokens
+        // This will now throw errors instead of returning false
+        await tokenService.mintTokens(
+          req.user!.id,
+          data.program,
+          data.amount
+        );
+        
+        // If we reach here, the mint operation was successful (either through blockchain or fallback)
+        
+        // Get updated wallet balances
+        const updatedWallet = await storage.getWallet(req.user!.id, data.program);
+        const xPointsWallet = await storage.getWallet(req.user!.id, "XPOINTS");
+        
+        // Get blockchain wallet address
+        const walletAddress = await tokenService.getUserWalletAddress(req.user!.id);
+        
+        res.status(200).json({
+          success: true,
+          blockchain: {
+            walletAddress,
+            tokenBalance: xPointsWallet?.balance || 0
+          },
+          sourceWallet: {
+            program: data.program,
+            balance: updatedWallet?.balance || 0
+          }
+        });
+      } catch (processingError) {
+        console.error("Error in token minting process:", processingError);
+        return res.status(500).json({ 
+          message: "Failed to convert points to xPoints", 
+          error: processingError.message 
+        });
       }
-      
-      // Get updated wallet balances
-      const updatedWallet = await storage.getWallet(req.user!.id, data.program);
-      const xPointsWallet = await storage.getWallet(req.user!.id, "XPOINTS");
-      
-      // Get blockchain wallet address
-      const walletAddress = await tokenService.getUserWalletAddress(req.user!.id);
-      
-      res.status(200).json({
-        success: true,
-        blockchain: {
-          walletAddress,
-          tokenBalance: xPointsWallet?.balance || 0
-        },
-        sourceWallet: {
-          program: data.program,
-          balance: updatedWallet?.balance || 0
-        }
-      });
     } catch (error) {
       console.error("Error tokenizing points:", error);
       
@@ -392,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
       }
       
-      res.status(500).json({ message: "Failed to tokenize points" });
+      res.status(500).json({ message: "Failed to convert loyalty points to xPoints" });
     }
   });
   
