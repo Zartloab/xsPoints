@@ -46,9 +46,22 @@ interface BlockchainWalletResponse {
   token: TokenInfo;
 }
 
+// Define interface for wallet data
+interface Wallet {
+  id: number;
+  userId: number;
+  program: string;
+  balance: number;
+  accountNumber: string | null;
+  accountName: string | null;
+  createdAt: string;
+}
+
 export default function TokenizationPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [selectedProgram, setSelectedProgram] = useState<string>("");
+  const [amount, setAmount] = useState<number>(0);
 
   // Fetch blockchain wallet data using TanStack Query v5
   const { 
@@ -61,6 +74,85 @@ export default function TokenizationPage() {
     retry: 1,
     staleTime: 60000, // 1 minute
   });
+  
+  // Query user wallets
+  const { 
+    data: wallets,
+    isLoading: walletsLoading
+  } = useQuery<Wallet[], Error>({
+    queryKey: ['/api/wallets'],
+    retry: 2
+  });
+  
+  // Mutation for tokenizing points
+  const tokenizeMutation = useMutation({
+    mutationFn: async (data: { program: string, amount: number }) => {
+      const res = await apiRequest("POST", "/api/tokenize", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Points Tokenized",
+        description: `Successfully converted ${amount} ${selectedProgram} points to xTokens.`,
+      });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/blockchain-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      
+      // Reset form
+      setSelectedProgram("");
+      setAmount(0);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Tokenization Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Get the selected wallet balance
+  const selectedWallet = wallets && wallets.length > 0 
+    ? wallets.find(wallet => wallet.program === selectedProgram) 
+    : undefined;
+  
+  // Handle tokenize button click
+  const handleTokenize = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedProgram) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a loyalty program.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a positive amount to tokenize.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (selectedWallet && selectedWallet.balance < amount) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have ${selectedWallet.balance} points available in your ${selectedProgram} wallet.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    tokenizeMutation.mutate({
+      program: selectedProgram,
+      amount
+    });
+  };
 
   // Handle errors through React effects
   React.useEffect(() => {
@@ -219,18 +311,27 @@ export default function TokenizationPage() {
         <h2 className="text-xl font-semibold mb-4">Tokenize Your Loyalty Points</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleTokenize}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Loyalty Program</label>
                 <select 
                   className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  defaultValue=""
+                  value={selectedProgram}
+                  onChange={(e) => setSelectedProgram(e.target.value)}
                 >
                   <option value="" disabled>Choose a program</option>
-                  <option value="QANTAS">Qantas Frequent Flyer</option>
-                  <option value="GYG">Guzman y Gomez</option>
-                  <option value="VELOCITY">Velocity Frequent Flyer</option>
-                  <option value="AMEX">American Express</option>
+                  {wallets && wallets.length > 0 ? (
+                    wallets.map(wallet => (
+                      <option key={wallet.program} value={wallet.program}>
+                        {wallet.program === "QANTAS" ? "Qantas Frequent Flyer" : 
+                         wallet.program === "GYG" ? "Guzman y Gomez" : 
+                         wallet.program === "VELOCITY" ? "Velocity Frequent Flyer" :
+                         wallet.program === "AMEX" ? "American Express" : wallet.program}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No wallets available</option>
+                  )}
                 </select>
               </div>
               
@@ -240,14 +341,33 @@ export default function TokenizationPage() {
                   type="number" 
                   className="w-full rounded-md border border-gray-300 px-3 py-2"
                   placeholder="Enter amount" 
+                  value={amount || ""}
+                  onChange={(e) => setAmount(Number(e.target.value))}
+                  min={1}
+                  max={selectedWallet?.balance || 0}
                 />
-                <p className="text-xs text-gray-500 mt-1">Available: 5,000 points</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Available: {selectedWallet ? selectedWallet.balance.toLocaleString() : "0"} points
+                </p>
               </div>
               
               <div className="pt-2">
-                <Button className="w-full">
-                  <Coins className="h-4 w-4 mr-2" />
-                  Tokenize Points
+                <Button 
+                  className="w-full" 
+                  type="submit"
+                  disabled={tokenizeMutation.isPending || !selectedProgram || !amount || amount <= 0}
+                >
+                  {tokenizeMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="h-4 w-4 mr-2" />
+                      Tokenize Points
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
