@@ -33,6 +33,11 @@ export const users = pgTable("users", {
   monthlyPointsConverted: real("monthly_points_converted").default(0).notNull(), // Monthly points converted
   lastMonthReset: timestamp("last_month_reset"), // Last time monthly points were reset
   totalFeesPaid: real("total_fees_paid").default(0).notNull(), // Lifetime fees paid
+  // Blockchain wallet integration
+  walletAddress: text("wallet_address"), // Blockchain wallet address
+  walletPrivateKey: text("wallet_private_key"), // Encrypted private key (needs to be securely stored)
+  tokenBalance: real("token_balance").default(0), // Cache of token balance for faster reads
+  tokenLedgerSynced: timestamp("token_ledger_synced"), // Last sync time with blockchain
 });
 
 // Programs enum for loyalty programs
@@ -106,6 +111,13 @@ export const transactions = pgTable("transactions", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   feeApplied: real("fee_applied").default(0).notNull(),
   status: text("status").default("completed").notNull(),
+  // For P2P transfers
+  recipientId: serial("recipient_id").references(() => users.id).notNull().default(0),
+  // Blockchain integration
+  transactionHash: text("transaction_hash"), // Blockchain transaction hash
+  blockNumber: serial("block_number").default(0), // Block where transaction was confirmed
+  contractAddress: text("contract_address"), // Contract address (if applicable)
+  tokenAddress: text("token_address") // Token contract address
 });
 
 // Zod schemas
@@ -133,6 +145,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   amountTo: true,
   feeApplied: true,
   status: true,
+  recipientId: true,
+  transactionHash: true,
+  blockNumber: true,
+  contractAddress: true,
+  tokenAddress: true,
 });
 
 export const convertPointsSchema = z.object({

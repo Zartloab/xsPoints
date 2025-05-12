@@ -1,6 +1,6 @@
 import * as schema from "@shared/schema";
 import { 
-  type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
+  users, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
   type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData,
   type TradeOffer, type TradeTransaction
@@ -26,6 +26,11 @@ export interface IStorage {
   updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User>;
   updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User>;
   getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }>;
+  
+  // Blockchain wallet operations
+  updateUserWallet(userId: number, walletAddress: string, walletPrivateKey: string): Promise<User>;
+  updateTokenBalance(userId: number, balance: number): Promise<User>;
+  getUserByWalletAddress(walletAddress: string): Promise<User | undefined>;
   
   // Wallet operations
   getUserWallets(userId: number): Promise<Wallet[]>;
@@ -82,6 +87,40 @@ export class DatabaseStorage implements IStorage {
     
     // Set up initial tier benefits if they don't exist
     this.initializeTierBenefits();
+  }
+  
+  // Blockchain wallet management methods
+  async updateUserWallet(userId: number, walletAddress: string, walletPrivateKey: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        walletAddress,
+        walletPrivateKey,
+        tokenLedgerSynced: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
+  async updateTokenBalance(userId: number, balance: number): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        tokenBalance: balance,
+        tokenLedgerSynced: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
+  async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.walletAddress, walletAddress));
+    return user || undefined;
   }
 
   private async initializeExchangeRates() {
