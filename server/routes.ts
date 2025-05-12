@@ -54,6 +54,23 @@ const promotionSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // API endpoint to save user tutorial progress
+  app.post("/api/user/tutorial-progress", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    try {
+      const { moduleId, completed } = req.body;
+      
+      // You would save this to the database in a production app
+      // For now, we just return success
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error saving tutorial progress:", error);
+      return res.status(500).json({ error: "Failed to save tutorial progress" });
+    }
+  });
   // Sets up /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
 
