@@ -181,7 +181,7 @@ export class TokenService {
         amountTo: tokenAmount,
         feeApplied: 0,
         status: 'completed',
-        recipientId: null,
+        recipientId: 0,
         transactionHash: tx.hash, 
         blockNumber: (await tx.wait()).blockNumber || 0,
         contractAddress: BLOCKCHAIN_CONFIG.tokenContractAddress,
@@ -225,8 +225,8 @@ export class TokenService {
       const userWallet = new ethers.Wallet(user.walletPrivateKey, this.provider);
       const userContract = this.contract.connect(userWallet);
       
-      // Burn the tokens
-      const tx = await userContract.burn(
+      // Burn the tokens (using the contract method)
+      const tx = await userContract["burn(uint256)"](
         ethers.parseUnits(tokenAmount.toString(), 18)
       );
       
@@ -262,7 +262,7 @@ export class TokenService {
         amountTo: loyaltyAmount,
         feeApplied: 0,
         status: 'completed',
-        recipientId: null,
+        recipientId: 0,
         transactionHash: tx.hash, 
         blockNumber: (await tx.wait()).blockNumber || 0,
         contractAddress: BLOCKCHAIN_CONFIG.tokenContractAddress,

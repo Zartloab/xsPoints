@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import apiRouter from "./api";
 import docsRouter from "./api/docs";
+import { tokenService } from "./blockchain/tokenService";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
@@ -246,11 +247,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amountTo,
         feeApplied,
         status: "completed",
-        recipientId: null,
-        transactionHash: null,
+        recipientId: 0,
+        transactionHash: "",
         blockNumber: 0,
-        contractAddress: null,
-        tokenAddress: null
+        contractAddress: "",
+        tokenAddress: ""
       });
       
       res.status(200).json({
@@ -365,11 +366,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amountTo: data.amount,
         feeApplied: 0,
         status: "tokenized",
-        recipientId: null,
-        transactionHash: null,
+        recipientId: 0,
+        transactionHash: "",
         blockNumber: 0,
-        contractAddress: null,
-        tokenAddress: null
+        contractAddress: "",
+        tokenAddress: ""
       });
       
       // Update wallet balance
