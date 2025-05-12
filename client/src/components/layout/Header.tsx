@@ -67,6 +67,11 @@ export default function Header() {
             <Link href="/recommendations">
               <span className={`${location === '/recommendations' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer flex items-center`}>
                 <span>AI Recommendations</span>
+              </span>
+            </Link>
+            <Link href="/loyalty-journey">
+              <span className={`${location === '/loyalty-journey' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer flex items-center`}>
+                <span>Loyalty Journey</span>
                 <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
               </span>
             </Link>
