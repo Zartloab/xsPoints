@@ -158,12 +158,26 @@ export class TokenService {
    */
   async getUserBalance(userId: number): Promise<number> {
     try {
-      const address = await this.getUserWalletAddress(userId);
-      const balanceWei = await this.contract.balanceOf(address);
-      // Convert from wei to tokens (assuming 18 decimals)
-      return parseFloat(ethers.formatUnits(balanceWei, 18));
+      // Check if we have blockchain integration
+      if (!this.provider || !this.contract) {
+        // Use database balance as fallback
+        const user = await storage.getUser(userId);
+        return user?.tokenBalance || 0;
+      }
+      
+      try {
+        const address = await this.getUserWalletAddress(userId);
+        const balanceWei = await this.contract.balanceOf(address);
+        // Convert from wei to tokens (assuming 18 decimals)
+        return parseFloat(ethers.formatUnits(balanceWei, 18));
+      } catch (error) {
+        console.error('Error getting user blockchain balance:', error);
+        // Fallback to database balance
+        const user = await storage.getUser(userId);
+        return user?.tokenBalance || 0;
+      }
     } catch (error) {
-      console.error('Error getting user balance:', error);
+      console.error('Error in getUserBalance:', error);
       return 0;
     }
   }
@@ -177,6 +191,52 @@ export class TokenService {
       const wallet = await storage.getWallet(userId, loyaltyProgram);
       if (!wallet || wallet.balance < amount) {
         throw new Error('Insufficient loyalty points');
+      }
+      
+      // Check if blockchain integration is available
+      if (!this.provider || !this.adminWallet || !this.contract) {
+        console.log("Blockchain integration unavailable, simulating token minting");
+        // Update source wallet - reduce balance
+        await storage.updateWalletBalance(wallet.id, wallet.balance - amount);
+        
+        // Get or create XPOINTS wallet
+        let xpointsWallet = await storage.getWallet(userId, "XPOINTS");
+        if (!xpointsWallet) {
+          xpointsWallet = await storage.createWallet({
+            userId,
+            program: "XPOINTS",
+            balance: 0,
+            accountNumber: null,
+            accountName: null
+          });
+        }
+        
+        // Update XPOINTS wallet - add tokens (1:1 ratio in simulation)
+        await storage.updateWalletBalance(xpointsWallet.id, xpointsWallet.balance + amount);
+        
+        // Update user's token balance in database
+        const user = await storage.getUser(userId);
+        if (user) {
+          await storage.updateTokenBalance(userId, (user.tokenBalance || 0) + amount);
+        }
+        
+        // Create transaction record
+        await storage.createTransaction({
+          userId,
+          fromProgram: loyaltyProgram,
+          toProgram: "XPOINTS",
+          amountFrom: amount,
+          amountTo: amount,
+          feeApplied: 0,
+          status: "completed",
+          recipientId: 0,
+          transactionHash: "simulated-" + Date.now(),
+          blockNumber: 0,
+          contractAddress: "0xSimulatedContract",
+          tokenAddress: "0xSimulatedToken"
+        });
+        
+        return true;
       }
       
       // Get the user's blockchain wallet address
