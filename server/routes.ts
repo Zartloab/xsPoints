@@ -6,6 +6,8 @@ import apiRouter from "./api";
 import docsRouter from "./api/docs";
 import { tokenService } from "./blockchain/tokenService";
 import { recommendationService } from "./services/recommendationService";
+import { chatbotService, ChatMessage } from "./services/chatbotService";
+import { marketInsightsService } from "./services/marketInsightsService";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
@@ -1104,6 +1106,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating recommendations:", error);
       res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+  
+  // ===== AI CUSTOMER SUPPORT CHATBOT =====
+  
+  // Generate chatbot response
+  app.post("/api/chatbot", async (req, res) => {
+    try {
+      const { messages } = req.body;
+      
+      // Validate request body
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ 
+          message: "Invalid request. Please provide an array of chat messages." 
+        });
+      }
+      
+      // Get user ID if authenticated
+      const userId = req.isAuthenticated() ? req.user!.id : 0;
+      
+      // Generate response
+      const response = await chatbotService.getResponse(userId, messages);
+      res.json(response);
+    } catch (error) {
+      console.error("Error generating chatbot response:", error);
+      res.status(500).json({ 
+        message: "Failed to generate response",
+        fallback: "I'm currently experiencing technical difficulties. Please try again later."
+      });
+    }
+  });
+  
+  // ===== AI MARKET INSIGHTS =====
+  
+  // Get market trends and insights
+  app.get("/api/market-insights", async (req, res) => {
+    try {
+      const insights = await marketInsightsService.getMarketInsights();
+      res.json(insights);
+    } catch (error) {
+      console.error("Error generating market insights:", error);
+      res.status(500).json({ message: "Failed to generate market insights" });
+    }
+  });
+  
+  // Get personalized portfolio analysis
+  app.get("/api/portfolio-analysis", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const analysis = await marketInsightsService.analyzeUserPortfolio(req.user!.id);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing portfolio:", error);
+      res.status(500).json({ message: "Failed to analyze portfolio" });
     }
   });
   

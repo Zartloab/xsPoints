@@ -88,9 +88,10 @@ export class RecommendationService {
     exchangeRates: { fromProgram: string; toProgram: string; rate: string }[]
   ): Promise<UserRecommendation> {
     try {
-      // Check if OpenAI API key is available
-      if (!process.env.OPENAI_API_KEY) {
-        console.log('No OpenAI API key found, using rule-based recommendations');
+      // Check if OpenAI API is available
+      const isOpenAIAvailable = await openaiService.checkAvailability();
+      if (!isOpenAIAvailable) {
+        console.log('OpenAI service unavailable, using rule-based recommendations');
         return this.generateRuleBasedRecommendations(user, wallets, transactions, exchangeRates);
       }
       
@@ -163,26 +164,17 @@ export class RecommendationService {
 
       console.log('Making OpenAI request for recommendations...');
       
-      // Make API call to OpenAI
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify(userData) }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3 // Lower temperature for more focused recommendations
-      });
-
-      const content = response.choices[0].message.content;
-      if (!content) {
-        throw new Error('No response from AI');
-      }
-
-      console.log('Received OpenAI response');
+      // Make API call to OpenAI using centralized service
+      const aiRecommendation = await openaiService.getCompletion(
+        systemPrompt,
+        userData,
+        {
+          responseFormat: 'json_object',
+          temperature: 0.3
+        }
+      );
       
-      // Parse the AI response
-      const aiRecommendation = JSON.parse(content);
+      console.log('Received OpenAI response');
       
       // Create user recommendation
       const userRecommendation: UserRecommendation = {
