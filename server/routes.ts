@@ -1107,6 +1107,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Test endpoint for AI recommendations - FOR DEVELOPMENT ONLY
+  app.get("/api/recommendations/test", async (req, res) => {
+    try {
+      // Use a hardcoded user ID for testing
+      const testUserId = 1; // This should be a valid user ID in your database
+      console.log(`Generating test recommendations for user ID ${testUserId}`);
+      
+      // First make sure the user exists
+      const user = await storage.getUser(testUserId);
+      if (!user) {
+        console.error(`Test user with ID ${testUserId} not found`);
+        return res.status(404).json({ message: "Test user not found" });
+      }
+      
+      console.log(`Found test user: ${user.username}`);
+      
+      // Make sure the user has wallets
+      const wallets = await storage.getUserWallets(testUserId);
+      if (!wallets || wallets.length === 0) {
+        console.error(`No wallets found for test user`);
+        return res.status(404).json({ message: "No wallets found for test user" });
+      }
+      
+      console.log(`Found ${wallets.length} wallets for test user`);
+      
+      // Generate recommendations
+      const recommendations = await recommendationService.getUserRecommendations(testUserId);
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating test recommendations:", error);
+      res.status(500).json({ message: "Failed to generate test recommendations", error: error.message });
+    }
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
