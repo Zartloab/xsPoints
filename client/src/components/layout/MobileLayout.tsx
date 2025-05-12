@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Repeat, Wallet, User, BarChart3, Trophy } from 'lucide-react';
+import { Home, Repeat, Wallet, User, BarChart3, Trophy, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MobileLayoutProps = {
@@ -15,6 +15,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     { icon: Repeat, label: 'Exchange', href: '/exchange' },
     { icon: BarChart3, label: 'Explorer', href: '/explorer' },
     { icon: Trophy, label: 'Earn', href: '/earn' },
+    { icon: Sparkles, label: 'AI Rec', href: '/recommendations' },
     { icon: User, label: 'Profile', href: '/profile' },
   ];
 
@@ -54,7 +55,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
       {/* Mobile Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background z-50">
-        <div className="grid h-full grid-cols-5">
+        <div className="grid h-full grid-cols-6">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
