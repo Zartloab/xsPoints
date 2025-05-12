@@ -20,21 +20,109 @@ import {
   Banknote, 
   ArrowDownToLine, 
   Landmark, 
-  ArrowRightLeft 
+  ArrowRightLeft,
+  Loader2
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+
+// Define interfaces for the blockchain wallet data
+interface WalletInfo {
+  address: string;
+  balance: number;
+}
+
+interface TokenInfo {
+  totalSupply: number;
+  reserves: Array<{
+    program: string;
+    balance: number;
+  }>;
+}
+
+interface BlockchainWalletResponse {
+  wallet: WalletInfo;
+  token: TokenInfo;
+}
 
 export default function TokenizationPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Mock data for tokenization dashboard
+  // Fetch blockchain wallet data
+  const { data: blockchainData, isLoading, error } = useQuery<BlockchainWalletResponse>({
+    queryKey: ['/api/blockchain-wallet'],
+    retry: 1,
+    staleTime: 60000, // 1 minute
+    onError: (err: Error) => {
+      toast({
+        title: 'Error',
+        description: 'Could not fetch blockchain wallet data. Please try again later.',
+        variant: 'destructive',
+      });
+      console.error('Error fetching blockchain wallet data:', err);
+    },
+  });
+
+  // Calculate token statistics
   const tokenStats = {
-    totalTokens: 2450,
-    availableTokens: 1850,
-    stakedTokens: 600,
-    tokenValue: 1.05,
-    circulatingSupply: 250000,
-    marketCap: 262500,
+    totalTokens: blockchainData?.wallet.balance || 0,
+    availableTokens: blockchainData?.wallet.balance || 0,
+    stakedTokens: 0, // Not implemented yet
+    tokenValue: 1.05, // Fixed for now until we have real market data
+    circulatingSupply: blockchainData?.token.totalSupply || 0,
+    marketCap: (blockchainData?.token.totalSupply || 0) * 1.05, // totalSupply * tokenValue
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">xPoints Tokenization</h1>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+            <p className="text-sm text-muted-foreground">Loading blockchain data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">xPoints Tokenization</h1>
+        </div>
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error Loading Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>We couldn't load your tokenization data. This could be due to:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Temporary blockchain connection issues</li>
+              <li>Network connectivity problems</li>
+              <li>Server maintenance</li>
+            </ul>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Calculate progress value safely
+  const progressValue = tokenStats.totalTokens > 0 
+    ? (tokenStats.availableTokens / tokenStats.totalTokens) * 100 
+    : 0;
 
   return (
     <div className="space-y-8">
@@ -61,12 +149,20 @@ export default function TokenizationPage() {
                 Total: {tokenStats.totalTokens.toLocaleString()} xPoints
               </p>
               <div className="mt-4">
-                <Progress value={(tokenStats.availableTokens / tokenStats.totalTokens) * 100} className="h-2" />
+                <Progress value={progressValue} className="h-2" />
                 <div className="flex justify-between mt-2 text-xs text-muted-foreground">
                   <div>Available</div>
                   <div>Staked: {tokenStats.stakedTokens}</div>
                 </div>
               </div>
+              {blockchainData?.wallet?.address && (
+                <div className="mt-4 pt-3 border-t text-xs text-muted-foreground">
+                  <div className="font-medium text-gray-700 mb-1">Wallet Address:</div>
+                  <div className="font-mono bg-gray-50 p-2 rounded-md break-all">
+                    {blockchainData.wallet.address}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -89,7 +185,7 @@ export default function TokenizationPage() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Market Cap</div>
-                  <div className="font-medium">${tokenStats.marketCap.toLocaleString()}</div>
+                  <div className="font-medium">${Math.round(tokenStats.marketCap).toLocaleString()}</div>
                 </div>
               </div>
             </CardContent>
@@ -110,13 +206,17 @@ export default function TokenizationPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 All tokens are backed 1:1 with loyalty points
               </p>
-              <div className="mt-4 grid grid-cols-1 gap-2">
-                <div className="bg-gray-50 p-2 rounded-md">
-                  <div className="text-xs font-medium">Last Audit: May 1, 2023</div>
-                  <div className="text-xs text-muted-foreground">By: TokenSafe Audit</div>
+              <div className="mt-4">
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {blockchainData?.token?.reserves.slice(0, 4).map((reserve, index) => (
+                    <div key={index} className="bg-gray-50 p-2 rounded-md">
+                      <div className="text-xs font-medium truncate">{reserve.program}</div>
+                      <div className="text-xs text-muted-foreground">{reserve.balance.toLocaleString()} points</div>
+                    </div>
+                  ))}
                 </div>
                 <Button variant="outline" size="sm" className="w-full mt-2">
-                  View Certificate
+                  View All Reserves
                 </Button>
               </div>
             </CardContent>
