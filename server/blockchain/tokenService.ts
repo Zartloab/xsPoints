@@ -239,7 +239,7 @@ export class TokenService {
           amountTo: tokenAmount,
           feeApplied: 0,
           status: "completed",
-          recipientId: 0,
+          recipientId: userId, // Use the user's own ID as recipient
           transactionHash: "fallback-" + Date.now(),
           blockNumber: 0,
           contractAddress: "0xFallbackContract",
@@ -300,7 +300,7 @@ export class TokenService {
           amountTo: tokenAmount,
           feeApplied: 0,
           status: 'completed',
-          recipientId: 0,
+          recipientId: userId, // Use the user's own ID as recipient
           transactionHash: tx.hash, 
           blockNumber: (await tx.wait()).blockNumber || 0,
           contractAddress: BLOCKCHAIN_CONFIG.tokenContractAddress,
@@ -354,7 +354,7 @@ export class TokenService {
           amountTo: tokenAmount,
           feeApplied: 0,
           status: "completed",
-          recipientId: 0,
+          recipientId: userId, // Use the user's own ID as recipient
           transactionHash: "fallback-blockchain-error-" + Date.now(),
           blockNumber: 0,
           contractAddress: "0xFallbackContract",

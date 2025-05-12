@@ -385,15 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             balance: updatedWallet?.balance || 0
           }
         });
-      } catch (processingError) {
+      } catch (processingError: any) { // Type annotation to fix TypeScript error
         console.error("Error in token minting process:", processingError);
         return res.status(500).json({ 
           message: "Failed to convert points to xPoints", 
-          error: processingError.message 
+          error: processingError.message || "Unknown error" 
         });
       }
     } catch (error) {
-      console.error("Error tokenizing points:", error);
+      console.error("Error converting loyalty points to xPoints:", error);
       
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
