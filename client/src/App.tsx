@@ -28,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/tokenization" component={TokenizationPage} />
+      <ProtectedRoute path="/tokenization-page" component={TokenizationPage} />
       <ProtectedRoute path="/merchant" component={MerchantPage} />
       <ProtectedRoute path="/explorer" component={ExplorerPage} />
       <ProtectedRoute path="/trading" component={TradingPage} />
