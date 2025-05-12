@@ -252,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amountTo,
         feeApplied,
         status: "completed",
-        recipientId: 0,
+        recipientId: req.user!.id, // Use the current user as recipient for self-conversions
         transactionHash: "",
         blockNumber: 0,
         contractAddress: "",
