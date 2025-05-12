@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowUpDown, Wallet, TrendingUp, AreaChart, 
-  BookOpen, BarChart4, Award, FileText, Lightbulb
+  BookOpen, BarChart4, Award, FileText, Lightbulb, Sparkles
 } from 'lucide-react';
 import MobileMembershipTier from './MobileMembershipTier';
 import MobileTierComparisonModal from './MobileTierComparisonModal';
 import MobilePointsTranslator from './MobilePointsTranslator';
+import MobileRecommendationCard from './MobileRecommendationCard';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 
@@ -106,6 +107,11 @@ const MobileHomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* AI Recommendations */}
+      <section className="mb-6">
+        <MobileRecommendationCard />
+      </section>
+      
       {/* Features Section */}
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-3">Features</h2>
@@ -137,6 +143,13 @@ const MobileHomePage: React.FC = () => {
             description="Business tools and analytics" 
             href="/merchant"
             color="bg-amber-500"
+          />
+          <FeatureCard 
+            icon={Sparkles}
+            title="AI Recommendations" 
+            description="Get personalized loyalty points advice" 
+            href="/recommendations"
+            color="bg-blue-500"
           />
         </div>
       </section>

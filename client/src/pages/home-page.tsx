@@ -11,6 +11,7 @@ import LinkAccountForm from '@/components/account/LinkAccountForm';
 import ConnectedAccounts from '@/components/account/ConnectedAccounts';
 import MobileHomePage from '@/components/mobile/MobileHomePage';
 import PointsTranslator from '@/components/PointsTranslator';
+import MiniRecommendationPanel from '@/components/recommendations/MiniRecommendationPanel';
 import { useQuery } from '@tanstack/react-query';
 import { Wallet } from '@shared/schema';
 
@@ -43,8 +44,13 @@ export default function HomePage() {
       
       <DashboardWallets />
       
-      <div className="mb-8">
-        <MembershipTierCard />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="md:col-span-2">
+          <MembershipTierCard />
+        </div>
+        <div>
+          <MiniRecommendationPanel />
+        </div>
       </div>
       
       <div id="convert" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
