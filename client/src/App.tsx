@@ -19,7 +19,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
 import MobileLayout from "@/components/layout/MobileLayout";
-import TutorialWizard from "@/components/onboarding/TutorialWizard";
 
 function Router() {
   const { useMobileLayout } = usePreferredLayout();
@@ -76,7 +75,6 @@ function App() {
           <Toaster />
           <Router />
           <LayoutToggle />
-          <TutorialWizard />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
