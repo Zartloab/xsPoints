@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Bell, ChevronDown } from 'lucide-react';
+import ThemeControls from '@/components/theme/ThemeControls';
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
@@ -69,6 +70,8 @@ export default function Header() {
         
         {user && (
           <div className="flex items-center space-x-4">
+            <ThemeControls />
+            
             <div className="hidden md:block">
               <button className="text-gray-500 hover:text-gray-700">
                 <Bell className="h-5 w-5" />
