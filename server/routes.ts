@@ -279,6 +279,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
       }
       
+      // More detailed logging to help diagnose the issue
+      if (error.code === '23503') {
+        console.error(`Foreign key violation: ${error.detail}`);
+        
+        // Display current user info for debugging
+        console.log("Current user:", req.user);
+      }
+      
       res.status(500).json({ message: "Failed to convert points" });
     }
   });
