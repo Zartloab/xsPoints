@@ -244,20 +244,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateWalletBalance(destWallet.id, destWallet.balance + amountTo);
       
       // Create transaction record
-      const transaction = await storage.createTransaction({
-        userId: req.user!.id,
-        fromProgram: data.fromProgram,
-        toProgram: data.toProgram,
-        amountFrom: data.amount,
-        amountTo,
-        feeApplied,
-        status: "completed",
-        recipientId: req.user!.id, // Use the current user as recipient for self-conversions
-        transactionHash: "",
-        blockNumber: 0,
-        contractAddress: "",
-        tokenAddress: ""
-      });
+      let transaction;
+      try {
+        console.log("Creating transaction with user ID:", req.user!.id);
+        transaction = await storage.createTransaction({
+          userId: req.user!.id,
+          fromProgram: data.fromProgram,
+          toProgram: data.toProgram,
+          amountFrom: data.amount,
+          amountTo,
+          feeApplied,
+          status: "completed",
+          recipientId: req.user!.id, // Use the current user as recipient for self-conversions
+          transactionHash: "", // Empty string for nullable text fields
+          blockNumber: 0, // Use 0 for number fields that can't be null
+          contractAddress: "", // Empty string for nullable text fields
+          tokenAddress: "" // Empty string for nullable text fields
+        });
+      } catch (transactionError) {
+        console.error("Error creating transaction:", transactionError);
+        throw transactionError; // Re-throw to be caught by the outer catch block
+      }
       
       res.status(200).json({
         transaction,
@@ -272,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           freeLimit: FREE_CONVERSION_LIMIT
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error converting points:", error);
       
       if (error instanceof z.ZodError) {
