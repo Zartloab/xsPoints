@@ -65,6 +65,10 @@ export interface IStorage {
   updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics>;
   bulkIssuePoints(data: BulkPointIssuanceData): Promise<number>; // Returns number of successful issuances
   
+  // Blockchain and tokenization operations
+  getAllUserTokenBalances(): Promise<{ id: number, tokenBalance: number | null }[]>;
+  getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]>;
+  
   // Session store
   sessionStore: SessionStore;
 }
@@ -775,7 +779,12 @@ export class DatabaseStorage implements IStorage {
               amountFrom: data.pointsPerUser,
               amountTo: data.pointsPerUser,
               feeApplied: 0,
-              status: "COMPLETED"
+              status: "COMPLETED",
+              recipientId: 0,
+              transactionHash: "bulk-issuance-" + Date.now(),
+              blockNumber: 0,
+              contractAddress: "",
+              tokenAddress: ""
             });
             
             successCount++;
