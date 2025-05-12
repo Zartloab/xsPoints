@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>xPoints API Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
+    h1 { color: #0055aa; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; }
+    button { background: #0055aa; color: white; border: none; padding: 10px 15px; cursor: pointer; margin-right: 5px; }
+    #response { margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap; overflow: auto; max-height: 400px; }
+  </style>
+</head>
+<body>
+  <h1>xPoints API Testing Tool</h1>
+  <div class="form-group">
+    <label for="username">Username:</label>
+    <input type="text" id="username" value="admin">
+  </div>
+  <div class="form-group">
+    <label for="password">Password:</label>
+    <input type="password" id="password" value="password">
+  </div>
+  <div>
+    <button onclick="login()">Login</button>
+    <button onclick="getUser()">Get User</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+  <div style="margin-top: 10px;">
+    <button onclick="testRecommendations()">Get AI Recommendations</button>
+    <button onclick="getWallets()">Get Wallets</button>
+  </div>
+  
+  <div id="response" style="margin-top: 20px;">Response will appear here</div>
+
+  <script>
+    async function makeRequest(url, method = 'GET', body = null) {
+      try {
+        const options = {
+          method,
+          credentials: 'include',
+          headers: {}
+        };
+        
+        if (body) {
+          options.headers['Content-Type'] = 'application/json';
+          options.body = JSON.stringify(body);
+        }
+        
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error ${response.status}: ${errorText}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        } else {
+          return await response.text();
+        }
+      } catch (error) {
+        console.error('Request failed:', error);
+        return { error: error.message };
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      const data = await makeRequest('/api/login', 'POST', { username, password });
+      document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function getUser() {
+      const data = await makeRequest('/api/user');
+      document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function logout() {
+      const data = await makeRequest('/api/logout', 'POST');
+      document.getElementById('response').textContent = 'Logged out successfully';
+    }
+
+    async function testRecommendations() {
+      const data = await makeRequest('/api/recommendations');
+      document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function getWallets() {
+      const data = await makeRequest('/api/wallets');
+      document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>

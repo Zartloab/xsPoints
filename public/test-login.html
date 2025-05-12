@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
+    h1 { color: #0055aa; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; }
+    button { background: #0055aa; color: white; border: none; padding: 10px 15px; cursor: pointer; }
+    #response { margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Test xPoints API Login</h1>
+  <div class="form-group">
+    <label for="username">Username:</label>
+    <input type="text" id="username" value="admin">
+  </div>
+  <div class="form-group">
+    <label for="password">Password:</label>
+    <input type="password" id="password" value="password">
+  </div>
+  <button onclick="login()">Login</button>
+  <button onclick="testRecommendations()">Test Recommendations API</button>
+  
+  <div id="response"></div>
+
+  <script>
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        document.getElementById('response').textContent = 'Error: ' + error.message;
+      }
+    }
+
+    async function testRecommendations() {
+      try {
+        const response = await fetch('/api/recommendations', {
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        document.getElementById('response').textContent = 'Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
