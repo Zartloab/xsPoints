@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import apiRouter from "./api";
 import docsRouter from "./api/docs";
 import { tokenService } from "./blockchain/tokenService";
+import { recommendationService } from "./services/recommendationService";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
