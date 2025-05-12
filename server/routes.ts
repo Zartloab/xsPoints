@@ -8,6 +8,8 @@ import { tokenService } from "./blockchain/tokenService";
 import { recommendationService } from "./services/recommendationService";
 import { chatbotService, ChatMessage } from "./services/chatbotService";
 import { marketInsightsService } from "./services/marketInsightsService";
+import { pointsValuationService } from "./services/pointsValuationService";
+import { tradeAdvisorService } from "./services/tradeAdvisorService";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
@@ -1161,6 +1163,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error analyzing portfolio:", error);
       res.status(500).json({ message: "Failed to analyze portfolio" });
+    }
+  });
+  
+  // ===== AI POINTS VALUATION =====
+  
+  // Get detailed program valuation
+  app.get("/api/points-valuation/:program", async (req, res) => {
+    try {
+      const program = req.params.program as LoyaltyProgram;
+      
+      // Validate program parameter
+      const validPrograms: LoyaltyProgram[] = [
+        "QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", 
+        "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"
+      ];
+      
+      if (!validPrograms.includes(program)) {
+        return res.status(400).json({ 
+          message: "Invalid program. Please provide a valid loyalty program." 
+        });
+      }
+      
+      const valuation = await pointsValuationService.getProgramValuation(program);
+      res.json(valuation);
+    } catch (error) {
+      console.error("Error getting program valuation:", error);
+      res.status(500).json({ message: "Failed to get program valuation" });
+    }
+  });
+  
+  // Compare value between two programs
+  app.get("/api/points-comparison", async (req, res) => {
+    try {
+      const { fromProgram, toProgram } = req.query;
+      
+      // Validate parameters
+      const validPrograms: LoyaltyProgram[] = [
+        "QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", 
+        "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"
+      ];
+      
+      if (!fromProgram || !toProgram || 
+          !validPrograms.includes(fromProgram as LoyaltyProgram) || 
+          !validPrograms.includes(toProgram as LoyaltyProgram)) {
+        return res.status(400).json({ 
+          message: "Invalid programs. Please provide valid from and to loyalty programs." 
+        });
+      }
+      
+      const comparison = await pointsValuationService.comparePrograms(
+        fromProgram as LoyaltyProgram, 
+        toProgram as LoyaltyProgram
+      );
+      
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error comparing programs:", error);
+      res.status(500).json({ message: "Failed to compare programs" });
+    }
+  });
+  
+  // Find best redemption options for a specific balance
+  app.get("/api/best-redemptions", async (req, res) => {
+    try {
+      const { program, points } = req.query;
+      
+      // Validate parameters
+      const validPrograms: LoyaltyProgram[] = [
+        "QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", 
+        "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"
+      ];
+      
+      if (!program || !validPrograms.includes(program as LoyaltyProgram)) {
+        return res.status(400).json({ 
+          message: "Invalid program. Please provide a valid loyalty program." 
+        });
+      }
+      
+      const pointBalance = parseInt(points as string) || 10000;
+      
+      const bestRedemptions = await pointsValuationService.findBestRedemptions(
+        program as LoyaltyProgram,
+        pointBalance
+      );
+      
+      res.json({
+        program,
+        pointBalance,
+        bestRedemptions
+      });
+    } catch (error) {
+      console.error("Error finding best redemptions:", error);
+      res.status(500).json({ message: "Failed to find best redemptions" });
+    }
+  });
+  
+  // ===== AI TRADE ADVISOR =====
+  
+  // Get personalized trade advice
+  app.get("/api/trade-advice", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const advice = await tradeAdvisorService.generateTradeAdvice(req.user!.id);
+      res.json(advice);
+    } catch (error) {
+      console.error("Error generating trade advice:", error);
+      res.status(500).json({ message: "Failed to generate trade advice" });
+    }
+  });
+  
+  // Generate trade offer description
+  app.post("/api/trade-description", async (req, res) => {
+    try {
+      const { fromProgram, toProgram, amountFrom, amountTo } = req.body;
+      
+      // Validate parameters
+      const validPrograms: LoyaltyProgram[] = [
+        "QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", 
+        "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"
+      ];
+      
+      if (!fromProgram || !toProgram || !amountFrom || !amountTo ||
+          !validPrograms.includes(fromProgram) || 
+          !validPrograms.includes(toProgram)) {
+        return res.status(400).json({ 
+          message: "Invalid request. Please provide valid programs and amounts." 
+        });
+      }
+      
+      const description = await tradeAdvisorService.generateTradeDescription(
+        fromProgram,
+        toProgram,
+        amountFrom,
+        amountTo
+      );
+      
+      res.json(description);
+    } catch (error) {
+      console.error("Error generating trade description:", error);
+      res.status(500).json({ message: "Failed to generate trade description" });
+    }
+  });
+  
+  // Analyze trade offer
+  app.get("/api/analyze-trade/:offerId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const offerId = parseInt(req.params.offerId);
+      if (isNaN(offerId)) {
+        return res.status(400).json({ 
+          message: "Invalid trade offer ID." 
+        });
+      }
+      
+      const analysis = await tradeAdvisorService.analyzeTradeOffer(
+        req.user!.id,
+        offerId
+      );
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing trade offer:", error);
+      res.status(500).json({ message: "Failed to analyze trade offer" });
     }
   });
   
