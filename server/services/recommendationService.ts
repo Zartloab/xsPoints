@@ -91,6 +91,12 @@ export class RecommendationService {
     exchangeRates: { fromProgram: string; toProgram: string; rate: string }[]
   ): Promise<UserRecommendation> {
     try {
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.log('No OpenAI API key found, using rule-based recommendations');
+        return this.generateRuleBasedRecommendations(user, wallets, transactions, exchangeRates);
+      }
+      
       // Prepare user data for AI analysis
       const userData = {
         userProfile: {
@@ -158,6 +164,8 @@ export class RecommendationService {
         fees and recommend strategies that minimize fees.
       `;
 
+      console.log('Making OpenAI request for recommendations...');
+      
       // Make API call to OpenAI
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -174,6 +182,8 @@ export class RecommendationService {
         throw new Error('No response from AI');
       }
 
+      console.log('Received OpenAI response');
+      
       // Parse the AI response
       const aiRecommendation = JSON.parse(content);
       
@@ -192,22 +202,101 @@ export class RecommendationService {
     } catch (error) {
       console.error('Error analyzing user data with AI:', error);
       
-      // Fallback recommendation if AI analysis fails
-      return {
-        userId: user.id,
-        timestamp: new Date(),
-        recommendationType: 'general',
-        title: 'Point Optimization Opportunities',
-        description: 'Based on your current balances, here are some general recommendations to maximize your loyalty points value.',
-        programRecommendations: [
-          {
-            program: wallets[0]?.program || 'XPOINTS',
-            reason: 'This is your highest balance program, consider using these points for your next redemption.',
-            potentialValue: 'Variable based on redemption choice'
-          }
-        ]
-      };
+      // Fallback to rule-based recommendations if AI analysis fails
+      return this.generateRuleBasedRecommendations(user, wallets, transactions, exchangeRates);
     }
+  }
+  
+  /**
+   * Generates rule-based recommendations when OpenAI is not available
+   */
+  private generateRuleBasedRecommendations(
+    user: User,
+    wallets: Wallet[],
+    transactions: Transaction[],
+    exchangeRates: { fromProgram: string; toProgram: string; rate: string }[]
+  ): UserRecommendation {
+    console.log('Generating rule-based recommendations');
+    
+    // Sort wallets by balance (highest first)
+    const sortedWallets = [...wallets].sort((a, b) => b.balance - a.balance);
+    
+    // Find the wallet with the highest balance
+    const highestBalanceWallet = sortedWallets[0];
+    
+    // Find the wallet with the second highest balance
+    const secondHighestBalanceWallet = sortedWallets[1];
+    
+    // Find the best exchange rate for the highest balance wallet
+    let bestRate = 0;
+    let bestDestination = '';
+    
+    for (const rate of exchangeRates) {
+      if (rate.fromProgram === highestBalanceWallet.program) {
+        const rateValue = parseFloat(rate.rate);
+        if (rateValue > bestRate) {
+          bestRate = rateValue;
+          bestDestination = rate.toProgram;
+        }
+      }
+    }
+    
+    // Create program recommendations
+    const programRecommendations: ProgramRecommendation[] = [];
+    
+    // Recommend the highest balance program
+    programRecommendations.push({
+      program: highestBalanceWallet.program,
+      reason: `You have ${highestBalanceWallet.balance.toLocaleString()} points in this program. Consider using these points for your next redemption or converting them to a program with a higher value.`,
+      potentialValue: `~$${(highestBalanceWallet.balance * 0.01).toLocaleString()} AUD in typical redemption value`,
+    });
+    
+    // If there's a good conversion opportunity, add a recommendation
+    if (bestDestination && bestRate > 1) {
+      programRecommendations.push({
+        program: bestDestination,
+        reason: `Converting your ${highestBalanceWallet.program} points to ${bestDestination} could give you a favorable exchange rate of ${bestRate}.`,
+        potentialValue: `~${(highestBalanceWallet.balance * bestRate).toLocaleString()} points after conversion`,
+        conversionPath: `${highestBalanceWallet.program} -> ${bestDestination}`
+      });
+    }
+    
+    // Create transaction recommendations
+    const transactionRecommendations: TransactionRecommendation[] = [];
+    
+    // Recommend converting a portion of the highest balance program if there's a good rate
+    if (bestDestination && bestRate > 1 && highestBalanceWallet.balance > 1000) {
+      const recommendedAmount = Math.floor(highestBalanceWallet.balance * 0.3); // Recommend converting 30%
+      
+      transactionRecommendations.push({
+        fromProgram: highestBalanceWallet.program,
+        toProgram: bestDestination,
+        amount: recommendedAmount,
+        estimatedValue: `~${Math.floor(recommendedAmount * bestRate).toLocaleString()} ${bestDestination} points`,
+        reasoning: `Converting ${recommendedAmount.toLocaleString()} points from ${highestBalanceWallet.program} to ${bestDestination} gives you a favorable rate and diversifies your portfolio.`
+      });
+    }
+    
+    // If the user has multiple programs, recommend consolidating smaller balances
+    if (wallets.length > 2 && secondHighestBalanceWallet && secondHighestBalanceWallet.balance < 5000) {
+      transactionRecommendations.push({
+        fromProgram: secondHighestBalanceWallet.program,
+        toProgram: 'XPOINTS',
+        amount: secondHighestBalanceWallet.balance,
+        estimatedValue: `~${Math.floor(secondHighestBalanceWallet.balance * 0.9).toLocaleString()} xPoints`,
+        reasoning: `Consolidating your smaller balance of ${secondHighestBalanceWallet.balance.toLocaleString()} ${secondHighestBalanceWallet.program} points into xPoints gives you more flexibility for future exchanges.`
+      });
+    }
+    
+    return {
+      userId: user.id,
+      timestamp: new Date(),
+      recommendationType: transactionRecommendations.length > 0 ? 'conversion' : 'program',
+      title: 'Point Optimization Opportunities',
+      description: 'Based on analysis of your current balances and available exchange rates, here are some recommendations to maximize the value of your loyalty points.',
+      programRecommendations,
+      transactionRecommendations
+    };
   }
 
   /**

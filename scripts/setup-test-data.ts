@@ -1,5 +1,18 @@
 import { storage } from "../server/storage";
 import { LoyaltyProgram } from "../shared/schema";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+/**
+ * Helper function to hash a password in the same way the auth system does
+ */
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 /**
  * This script sets up test data for the recommendation engine
@@ -12,9 +25,13 @@ async function setupTestData() {
     let user = await storage.getUserByUsername("tester");
     if (!user) {
       console.log("Creating test user 'tester'...");
+      
+      // Hash the password the same way auth.ts does it
+      const hashedPassword = await hashPassword("password");
+      
       user = await storage.createUser({
         username: "tester",
-        password: "password",  // This will be hashed by the storage layer
+        password: hashedPassword,
         email: "tester@example.com",
         firstName: "Test",
         lastName: "User",

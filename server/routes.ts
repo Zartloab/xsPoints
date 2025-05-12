@@ -1111,7 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/recommendations/test", async (req, res) => {
     try {
       // Use a hardcoded user ID for testing
-      const testUserId = 1; // This should be a valid user ID in your database
+      const testUserId = 6; // Our new tester2 user
       console.log(`Generating test recommendations for user ID ${testUserId}`);
       
       // First make sure the user exists
@@ -1132,12 +1132,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found ${wallets.length} wallets for test user`);
       
-      // Generate recommendations
-      const recommendations = await recommendationService.getUserRecommendations(testUserId);
-      res.json(recommendations);
+      // Set a timeout for the API call to avoid long-running requests
+      const timeout = 5000; // 5 seconds timeout
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Recommendation generation timed out')), timeout)
+      );
+      
+      // Generate recommendations with timeout
+      try {
+        const recommendations = await Promise.race([
+          recommendationService.getUserRecommendations(testUserId),
+          timeoutPromise
+        ]) as any;
+        res.json(recommendations);
+      } catch (timeoutError) {
+        console.log('Recommendation timed out, using rule-based fallback');
+        // If timed out, use rule-based recommendations directly
+        const wallets = await storage.getUserWallets(testUserId);
+        const transactions = await storage.getUserTransactions(testUserId);
+        const exchangeRates: { fromProgram: string; toProgram: string; rate: string }[] = [];
+        
+        res.json({
+          userId: testUserId,
+          timestamp: new Date(),
+          recommendationType: 'program',
+          title: 'Rule-Based Recommendations',
+          description: 'Here are some rule-based recommendations generated for your loyalty points.',
+          programRecommendations: [
+            {
+              program: wallets[0].program,
+              reason: `You have ${wallets[0].balance.toLocaleString()} points in this program. Consider using these points for your next redemption.`,
+              potentialValue: 'Variable based on redemption choice'
+            }
+          ]
+        });
+      }
     } catch (error) {
       console.error("Error generating test recommendations:", error);
-      res.status(500).json({ message: "Failed to generate test recommendations", error: error.message });
+      res.status(500).json({ message: "Failed to generate test recommendations", error: (error as Error).message });
     }
   });
   
