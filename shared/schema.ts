@@ -97,7 +97,8 @@ export const exchangeRates = pgTable("exchange_rates", {
   fromProgram: loyaltyProgramEnum("from_program").notNull(),
   toProgram: loyaltyProgramEnum("to_program").notNull(),
   rate: numeric("rate").notNull(),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  verificationData: text("verification_data"), // JSON data about the verification source and status
 });
 
 // Transactions table
