@@ -32,21 +32,21 @@ function Router() {
 
   const routes = (
     <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/" component={() => <HomePage />} />
+      <ProtectedRoute path="/profile" component={() => <ProfilePage />} />
       {/* Tokenization UI is hidden but backend infrastructure is still in place */}
-      {/* <ProtectedRoute path="/tokenization" component={TokenizationPage} /> */}
-      {/* <ProtectedRoute path="/tokenization-page" component={TokenizationPage} /> */}
-      <ProtectedRoute path="/merchant" component={MerchantPage} />
-      <ProtectedRoute path="/explorer" component={ExplorerPage} />
-      <ProtectedRoute path="/trading" component={TradingPage} />
-      <ProtectedRoute path="/tutorial" component={TutorialPage} />
-      <ProtectedRoute path="/earn" component={GamificationPage} />
-      <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
-      <ProtectedRoute path="/loyalty-journey" component={LoyaltyJourneyPage} />
-      <ProtectedRoute path="/marketplace" component={MarketplacePage} />
-      <ProtectedRoute path="/exchange-rates" component={ExchangeRatesPage} />
-      <ProtectedRoute path="/rate-verification" component={RateVerificationPage} />
+      {/* <ProtectedRoute path="/tokenization" component={() => <TokenizationPage />} /> */}
+      {/* <ProtectedRoute path="/tokenization-page" component={() => <TokenizationPage />} /> */}
+      <ProtectedRoute path="/merchant" component={() => <MerchantPage />} />
+      <ProtectedRoute path="/explorer" component={() => <ExplorerPage />} />
+      <ProtectedRoute path="/trading" component={() => <TradingPage />} />
+      <ProtectedRoute path="/tutorial" component={() => <TutorialPage />} />
+      <ProtectedRoute path="/earn" component={() => <GamificationPage />} />
+      <ProtectedRoute path="/recommendations" component={() => <RecommendationsPage />} />
+      <ProtectedRoute path="/loyalty-journey" component={() => <LoyaltyJourneyPage />} />
+      <ProtectedRoute path="/marketplace" component={() => <MarketplacePage />} />
+      <ProtectedRoute path="/exchange-rates" component={() => <ExchangeRatesPage />} />
+      <ProtectedRoute path="/rate-verification" component={() => <RateVerificationPage />} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

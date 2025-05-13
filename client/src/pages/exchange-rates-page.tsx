@@ -21,7 +21,8 @@ import {
   ChevronDown,
   AlertTriangle,
   Zap,
-  HelpCircle
+  HelpCircle,
+  ShieldCheck
 } from 'lucide-react';
 import {
   AreaChart,
