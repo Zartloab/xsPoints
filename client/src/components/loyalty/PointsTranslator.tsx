@@ -234,59 +234,188 @@ export default function PointsTranslator({ wallet }: PointsTranslatorProps) {
   const redeemableItems = getRedeemableItems(wallet.program, wallet.balance);
   const programDisplayName = getProgramDisplayName(wallet.program);
   
+  // Get program-specific colors
+  const getProgramColors = (program: LoyaltyProgram) => {
+    switch (program) {
+      case 'QANTAS':
+        return {
+          primary: 'text-red-600',
+          secondary: 'text-red-800',
+          bgLight: 'bg-red-50',
+          bgMedium: 'bg-red-100',
+          border: 'border-red-200',
+          gradient: 'from-red-50 to-white'
+        };
+      case 'GYG':
+        return {
+          primary: 'text-green-600',
+          secondary: 'text-green-800',
+          bgLight: 'bg-green-50',
+          bgMedium: 'bg-green-100',
+          border: 'border-green-200',
+          gradient: 'from-green-50 to-white'
+        };
+      case 'XPOINTS':
+        return {
+          primary: 'text-blue-600',
+          secondary: 'text-blue-800',
+          bgLight: 'bg-blue-50',
+          bgMedium: 'bg-blue-100',
+          border: 'border-blue-200',
+          gradient: 'from-blue-50 to-white'
+        };
+      case 'VELOCITY':
+        return {
+          primary: 'text-purple-600',
+          secondary: 'text-purple-800',
+          bgLight: 'bg-purple-50',
+          bgMedium: 'bg-purple-100',
+          border: 'border-purple-200',
+          gradient: 'from-purple-50 to-white'
+        };
+      case 'AMEX':
+        return {
+          primary: 'text-blue-600',
+          secondary: 'text-blue-800',
+          bgLight: 'bg-blue-50',
+          bgMedium: 'bg-blue-100',
+          border: 'border-blue-200',
+          gradient: 'from-blue-50 to-white'
+        };
+      case 'FLYBUYS':
+        return {
+          primary: 'text-yellow-600',
+          secondary: 'text-yellow-800',
+          bgLight: 'bg-yellow-50',
+          bgMedium: 'bg-yellow-100',
+          border: 'border-yellow-200',
+          gradient: 'from-yellow-50 to-white'
+        };
+      case 'HILTON':
+        return {
+          primary: 'text-blue-600',
+          secondary: 'text-blue-800',
+          bgLight: 'bg-blue-50',
+          bgMedium: 'bg-blue-100',
+          border: 'border-blue-200',
+          gradient: 'from-blue-50 to-white'
+        };
+      case 'MARRIOTT':
+        return {
+          primary: 'text-indigo-600',
+          secondary: 'text-indigo-800',
+          bgLight: 'bg-indigo-50',
+          bgMedium: 'bg-indigo-100',
+          border: 'border-indigo-200',
+          gradient: 'from-indigo-50 to-white'
+        };
+      case 'AIRBNB':
+        return {
+          primary: 'text-pink-600',
+          secondary: 'text-pink-800',
+          bgLight: 'bg-pink-50',
+          bgMedium: 'bg-pink-100',
+          border: 'border-pink-200',
+          gradient: 'from-pink-50 to-white'
+        };
+      case 'DELTA':
+        return {
+          primary: 'text-violet-600',
+          secondary: 'text-violet-800',
+          bgLight: 'bg-violet-50',
+          bgMedium: 'bg-violet-100',
+          border: 'border-violet-200',
+          gradient: 'from-violet-50 to-white'
+        };
+      default:
+        return {
+          primary: 'text-gray-600',
+          secondary: 'text-gray-800',
+          bgLight: 'bg-gray-50',
+          bgMedium: 'bg-gray-100',
+          border: 'border-gray-200',
+          gradient: 'from-gray-50 to-white'
+        };
+    }
+  };
+  
+  const colors = getProgramColors(wallet.program);
+  
   return (
-    <Card className="border border-gray-100 bg-white/50 backdrop-blur-sm overflow-hidden">
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">
-          Your {programDisplayName} points could get you:
-        </h3>
+    <Card className="border-0 shadow-md overflow-hidden mt-2">
+      <div className={`h-1.5 bg-gradient-to-r ${colors.gradient}`}></div>
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`p-1.5 rounded-full ${colors.bgMedium} ${colors.primary}`}>
+            <Gift className="h-4 w-4" />
+          </div>
+          <h3 className="font-semibold text-gray-800">
+            Your {programDisplayName} points could get you:
+          </h3>
+        </div>
         
         {redeemableItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            {redeemableItems.map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className={`p-3 rounded-lg border flex items-center gap-3 ${
-                  item.pointsRequired <= wallet.balance 
-                    ? 'border-green-100 bg-green-50' 
-                    : 'border-amber-100 bg-amber-50'
-                }`}
-              >
-                <div className={`p-2 rounded-full ${
-                  item.pointsRequired <= wallet.balance 
-                    ? 'bg-green-100 text-green-600' 
-                    : 'bg-amber-100 text-amber-600'
-                }`}>
-                  {item.icon}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.description}</p>
-                  <div className="flex items-center mt-1">
-                    <span className={`text-xs font-semibold ${
-                      item.pointsRequired <= wallet.balance 
-                        ? 'text-green-600' 
-                        : 'text-amber-600'
-                    }`}>
-                      {item.pointsRequired.toLocaleString()} points
-                    </span>
-                    {item.pointsRequired > wallet.balance && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        (Need {(item.pointsRequired - wallet.balance).toLocaleString()} more)
-                      </span>
-                    )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {redeemableItems.map((item, index) => {
+              const canAfford = item.pointsRequired <= wallet.balance;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className={`p-4 rounded-lg border shadow-sm flex items-start gap-3 hover:shadow-md transition-shadow ${
+                    canAfford 
+                      ? 'border-green-200 bg-gradient-to-br from-green-50 to-white' 
+                      : 'border-amber-200 bg-gradient-to-br from-amber-50 to-white'
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-full flex-shrink-0 ${
+                    canAfford 
+                      ? 'bg-green-100 text-green-600' 
+                      : 'bg-amber-100 text-amber-600'
+                  }`}>
+                    {item.icon}
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                  <div>
+                    <p className="font-medium text-gray-800">{item.name}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{item.description}</p>
+                    <div className="flex items-center mt-2">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        canAfford 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {item.pointsRequired.toLocaleString()} points
+                      </span>
+                      {item.pointsRequired > wallet.balance && (
+                        <span className="text-xs text-gray-500 ml-2 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Need {(item.pointsRequired - wallet.balance).toLocaleString()} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 py-2">
-            Your balance isn't enough for standard rewards yet. Keep collecting points!
-          </p>
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-center">
+            <div className="p-2 bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-sm text-blue-800 font-medium">
+              Your balance isn't enough for standard rewards yet.
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Keep collecting points to unlock these rewards!
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
