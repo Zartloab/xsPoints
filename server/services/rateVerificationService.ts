@@ -215,7 +215,7 @@ export interface VerifiedExchangeRate {
   toProgram: LoyaltyProgram;
   rate: string;
   updatedAt: Date;
-  verificationData?: string;
+  verificationData?: string | null;
   verification: RateVerification;
 }
 
