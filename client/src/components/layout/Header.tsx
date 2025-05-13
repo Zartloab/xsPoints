@@ -46,9 +46,10 @@ export default function Header() {
             <Link href="/#history">
               <span className={`${location === '/#history' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>History</span>
             </Link>
-            <Link href="/tokenization">
+            {/* Tokenization UI is hidden but backend infrastructure is in place for future use */}
+            {/* <Link href="/tokenization">
               <span className={`${location === '/tokenization' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Tokenization</span>
-            </Link>
+            </Link> */}
             <Link href="/merchant">
               <span className={`${location === '/merchant' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Merchant</span>
             </Link>

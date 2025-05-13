@@ -9,6 +9,8 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProfilePage from "@/pages/profile-page";
+// Keeping the import but tokenization UI is hidden for now
+// The backend infrastructure is still in place for future use
 import TokenizationPage from "@/pages/tokenization-page";
 import MerchantPage from "@/pages/merchant-page";
 import ExplorerPage from "@/pages/explorer-page";
@@ -29,8 +31,9 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/tokenization" component={TokenizationPage} />
-      <ProtectedRoute path="/tokenization-page" component={TokenizationPage} />
+      {/* Tokenization UI is hidden but backend infrastructure is still in place */}
+      {/* <ProtectedRoute path="/tokenization" component={TokenizationPage} /> */}
+      {/* <ProtectedRoute path="/tokenization-page" component={TokenizationPage} /> */}
       <ProtectedRoute path="/merchant" component={MerchantPage} />
       <ProtectedRoute path="/explorer" component={ExplorerPage} />
       <ProtectedRoute path="/trading" component={TradingPage} />
