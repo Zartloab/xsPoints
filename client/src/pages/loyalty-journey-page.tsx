@@ -133,14 +133,16 @@ export default function LoyaltyJourneyPage() {
         <meta name="description" content="Visualize your loyalty points journey, track milestones, and optimize your rewards across all your loyalty programs." />
       </Helmet>
       
-      <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-2">Your Loyalty Journey</h1>
-        <p className="text-muted-foreground mb-6">
-          Track your progress, visualize trends, and discover insights to optimize your loyalty points.
-        </p>
+      <div className="container max-w-6xl mx-auto py-10 px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-3">Your Loyalty Journey</h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Track your progress, visualize trends, and discover insights to optimize your loyalty points.
+          </p>
+        </div>
         
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="milestones">Milestones</TabsTrigger>
             <TabsTrigger value="trends">Conversion Trends</TabsTrigger>
@@ -171,13 +173,13 @@ export default function LoyaltyJourneyPage() {
               />
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="border-0 shadow-md overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b pb-4">
                   <CardTitle>Favorite Programs</CardTitle>
                   <CardDescription>Your most used loyalty programs</CardDescription>
                 </CardHeader>
-                <CardContent className="h-80">
+                <CardContent className="h-80 pt-6">
                   {journeyData.favoritePrograms.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -186,7 +188,7 @@ export default function LoyaltyJourneyPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={80}
+                          outerRadius={90}
                           fill="#8884d8"
                           dataKey="pointsProcessed"
                           nameKey="program"
@@ -196,8 +198,15 @@ export default function LoyaltyJourneyPage() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Legend />
-                        <Tooltip formatter={(value) => value.toLocaleString()} />
+                        <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+                        <Tooltip 
+                          formatter={(value) => value.toLocaleString()} 
+                          contentStyle={{ 
+                            borderRadius: '8px', 
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            border: 'none' 
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
@@ -208,43 +217,46 @@ export default function LoyaltyJourneyPage() {
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
+              <Card className="border-0 shadow-md overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b pb-4">
                   <CardTitle>Recent Activity</CardTitle>
                   <CardDescription>Your latest point conversions</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-0">
+                  <div className="divide-y">
                     {journeyData.recentTransactions.length > 0 ? (
                       journeyData.recentTransactions.map((tx) => (
-                        <div key={tx.id} className="flex justify-between items-center border-b pb-2">
+                        <div key={tx.id} className="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors">
                           <div>
-                            <p className="font-medium">
-                              {tx.fromProgram} → {tx.toProgram}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                              <p className="font-medium">
+                                {tx.fromProgram} → {tx.toProgram}
+                              </p>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
                               {formatDate(tx.timestamp)}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">
+                            <p className="font-medium text-gray-900">
                               {tx.amountFrom.toLocaleString()} → {tx.amountTo.toLocaleString()}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              Fee: {tx.feeApplied.toLocaleString()}
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {tx.feeApplied > 0 ? `Fee: ${tx.feeApplied.toLocaleString()}` : 'No fee'}
                             </p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-muted-foreground text-center py-8">No recent transactions</p>
+                      <p className="text-muted-foreground text-center py-10">No recent transactions</p>
                     )}
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="bg-gray-50 border-t py-3">
                   <button
                     onClick={() => setActiveTab("trends")}
-                    className="flex items-center text-blue-600 text-sm font-medium"
+                    className="flex items-center text-blue-600 text-sm font-medium mx-auto hover:text-blue-800 transition-colors"
                   >
                     View all transactions
                     <ChevronRight className="ml-1 h-4 w-4" />
@@ -256,72 +268,156 @@ export default function LoyaltyJourneyPage() {
           
           {/* Milestones Tab */}
           <TabsContent value="milestones" className="space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
                 <CardTitle>Your Loyalty Milestones</CardTitle>
                 <CardDescription>Track your achievements and progress</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {journeyData.milestones.map((milestone, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between">
-                        <h3 className="font-semibold flex items-center">
-                          <Trophy className="mr-2 h-5 w-5 text-amber-500" />
-                          {milestone.title}
-                        </h3>
-                        {milestone.date && (
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(milestone.date)}
-                          </span>
+              <CardContent className="p-6">
+                <div className="space-y-8">
+                  {journeyData.milestones.length > 0 ? (
+                    journeyData.milestones.map((milestone, index) => (
+                      <div key={index} className="relative pl-8 pb-8">
+                        {/* Timeline connector */}
+                        {index < journeyData.milestones.length - 1 && (
+                          <div className="absolute left-3 top-6 h-full w-0.5 bg-blue-100"></div>
                         )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{milestone.description}</p>
-                      {milestone.progress !== undefined && (
-                        <div className="pt-2">
-                          <Progress value={milestone.progress * 100} className="h-2" />
-                          <p className="text-xs text-right mt-1 text-muted-foreground">
-                            {Math.round(milestone.progress * 100)}% complete
-                          </p>
+                        
+                        {/* Milestone dot */}
+                        <div className="absolute left-0 top-1">
+                          {milestone.date ? (
+                            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
+                              <CheckIcon className="h-3 w-3 text-white" />
+                            </div>
+                          ) : milestone.progress !== undefined ? (
+                            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-sm">
+                              <Clock className="h-3 w-3 text-white" />
+                            </div>
+                          ) : (
+                            <div className="h-6 w-6 rounded-full border-2 border-gray-200 bg-gray-100"></div>
+                          )}
                         </div>
-                      )}
+                        
+                        {/* Milestone content */}
+                        <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-semibold text-gray-800 flex items-center">
+                              <Trophy className="mr-2 h-5 w-5 text-amber-500" />
+                              {milestone.title}
+                            </h3>
+                            {milestone.date && (
+                              <span className="text-sm font-medium text-blue-600 flex items-center">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {formatDate(milestone.date)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{milestone.description}</p>
+                          {milestone.progress !== undefined && (
+                            <div className="mt-4">
+                              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Progress</span>
+                                <span>{Math.round(milestone.progress * 100)}%</span>
+                              </div>
+                              <Progress value={milestone.progress * 100} className="h-2" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <Award className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <h3 className="text-lg font-medium text-gray-600">No milestones yet</h3>
+                      <p className="text-muted-foreground mt-1">Start converting points to unlock achievements</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Membership Level: {journeyData.membershipTier}</CardTitle>
-                <CardDescription>Your tier benefits and privileges</CardDescription>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Membership Level</CardTitle>
+                    <CardDescription>Your tier benefits and privileges</CardDescription>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+                      {journeyData.membershipTier}
+                    </span>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {journeyData.membershipTier === "STANDARD" && (
                     <>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h3 className="font-semibold mb-2">Standard Benefits</h3>
-                        <ul className="text-sm space-y-1">
-                          <li>• Basic conversion rates</li>
-                          <li>• Free conversions up to 10,000 points</li>
-                          <li>• 0.5% fee on amounts over the free limit</li>
+                      <div className="bg-white border border-blue-100 p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center mb-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <Star className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <h3 className="font-semibold text-blue-800">Standard Benefits</h3>
+                        </div>
+                        <ul className="text-sm space-y-2 pl-5">
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
+                            <span>Basic conversion rates</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
+                            <span>Free conversions up to 10,000 points</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
+                            <span>0.5% fee on amounts over the free limit</span>
+                          </li>
                         </ul>
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-lg opacity-60">
-                        <h3 className="font-semibold mb-2">Silver Benefits (Next Tier)</h3>
-                        <ul className="text-sm space-y-1">
-                          <li>• Improved conversion rates</li>
-                          <li>• Free conversions up to 25,000 points</li>
-                          <li>• 0.4% fee on amounts over the free limit</li>
+                      <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow opacity-70">
+                        <div className="flex items-center mb-3">
+                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <Medal className="h-4 w-4 text-gray-500" />
+                          </div>
+                          <h3 className="font-semibold text-gray-700">Silver Benefits (Next Tier)</h3>
+                        </div>
+                        <ul className="text-sm space-y-2 pl-5">
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">Improved conversion rates</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">Free conversions up to 25,000 points</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">0.4% fee on amounts over the free limit</span>
+                          </li>
                         </ul>
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-lg opacity-40">
-                        <h3 className="font-semibold mb-2">Gold Benefits</h3>
-                        <ul className="text-sm space-y-1">
-                          <li>• Premium conversion rates</li>
-                          <li>• Free conversions up to 50,000 points</li>
-                          <li>• 0.3% fee on amounts over the free limit</li>
+                      <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow opacity-60">
+                        <div className="flex items-center mb-3">
+                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <Award className="h-4 w-4 text-gray-500" />
+                          </div>
+                          <h3 className="font-semibold text-gray-700">Gold Benefits</h3>
+                        </div>
+                        <ul className="text-sm space-y-2 pl-5">
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">Premium conversion rates</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">Free conversions up to 50,000 points</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                            <span className="text-gray-600">0.3% fee on amounts over the free limit</span>
+                          </li>
                         </ul>
                       </div>
                     </>
@@ -704,16 +800,16 @@ function StatsCard({ title, value, description, icon }: {
   icon: React.ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-full bg-blue-100 p-1.5 text-blue-600">
+    <Card className="overflow-hidden border-0 shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-br from-blue-50 to-slate-50">
+        <CardTitle className="text-sm font-medium text-blue-800">{title}</CardTitle>
+        <div className="h-10 w-10 rounded-lg bg-blue-600 p-2 text-white shadow-sm">
           {icon}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+      <CardContent className="pt-4">
+        <div className="text-3xl font-bold text-gray-800">{value}</div>
+        <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>
   );
