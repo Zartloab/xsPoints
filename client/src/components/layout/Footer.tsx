@@ -26,6 +26,9 @@ export default function Footer() {
               <Link href="/support" className="text-gray-500 hover:text-gray-900">
                 <span className="text-sm">Support</span>
               </Link>
+              <Link href="/rate-verification" className="text-gray-500 hover:text-gray-900">
+                <span className="text-sm">Rate Verification</span>
+              </Link>
             </div>
           </div>
         </div>

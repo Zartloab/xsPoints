@@ -2,6 +2,7 @@ import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
+import MobileFooter from './MobileFooter';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {children}
         </div>
       </main>
+      <MobileFooter />
       <MobileNav />
       <Footer />
     </div>
