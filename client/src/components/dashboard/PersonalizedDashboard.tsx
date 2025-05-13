@@ -504,7 +504,39 @@ export default function PersonalizedDashboard() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {getOpportunities().map((opportunity, index) => (
+          {/* Add a xPoints specific card at the beginning */}
+          <OpportunityCard
+            title="Power of xPoints"
+            description="Learn how businesses use xPoints to reward their customers"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            }
+            action="Merchant Platform"
+            onClick={() => window.location.href = '/merchant'}
+            badgeText="Featured"
+            badgeVariant="secondary"
+          />
+
+          {/* Business opportunity card */}
+          <OpportunityCard
+            title="For Businesses"
+            description="Issue xPoints to your customers and join our network of merchants"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            }
+            action="Get Started"
+            onClick={() => window.location.href = '/merchant'}
+            badgeText="New"
+            badgeVariant="default"
+          />
+
+          {/* Include one personalized opportunity */}
+          {getOpportunities().slice(0, 1).map((opportunity, index) => (
             <OpportunityCard
               key={index}
               title={opportunity.title}
