@@ -482,11 +482,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate dollar values for user transparency
-      const fromValueInDollars = data.amount * 
-        (data.fromProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.fromProgram));
+      const fromPointValue = data.fromProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.fromProgram);
+      const toPointValue = data.toProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.toProgram);
       
-      const toValueInDollars = amountTo * 
-        (data.toProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.toProgram));
+      const fromValueInDollars = data.amount * fromPointValue;
+      const toValueInDollars = amountTo * toPointValue;
         
       res.status(200).json({
         transaction,
