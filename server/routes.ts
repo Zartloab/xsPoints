@@ -195,23 +195,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const calculateDollarValue = (program: string, balance: number) => {
-        // Very simplified dollar value calculation
-        // In a real app, this would use real-time redemption rates or a more complex formula
-        const approximateValues: Record<string, number> = {
-          'QANTAS': 0.01,    // 1 cent per point
-          'VELOCITY': 0.01,  // 1 cent per point
-          'GYG': 0.008,      // 0.8 cents per point
-          'XPOINTS': 0.015,  // 1.5 cents per point
-          'AMEX': 0.007,     // 0.7 cents per point
-          'FLYBUYS': 0.005,  // 0.5 cents per point
-          'HILTON': 0.004,   // 0.4 cents per point
-          'MARRIOTT': 0.006, // 0.6 cents per point
-          'AIRBNB': 0.009,   // 0.9 cents per point
-          'DELTA': 0.011     // 1.1 cents per point
+        // Dollar value calculation using our standardized rates
+        // Where 1 xPoint = $0.01 USD (1 cent)
+        const standardValues: Record<string, number> = {
+          'QANTAS': 0.006,    // $0.006 per Qantas point (0.6 cents)
+          'GYG': 0.008,       // $0.008 per GYG point (0.8 cents)
+          'XPOINTS': 0.01,    // $0.01 per xPoint (1 cent) - our standardized value
+          'VELOCITY': 0.007,  // $0.007 per Velocity point (0.7 cents)
+          'AMEX': 0.009,      // $0.009 per AMEX point (0.9 cents)
+          'FLYBUYS': 0.005,   // $0.005 per Flybuys point (0.5 cents)
+          'HILTON': 0.004,    // $0.004 per Hilton point (0.4 cents)
+          'MARRIOTT': 0.006,  // $0.006 per Marriott point (0.6 cents)
+          'AIRBNB': 0.0095,   // $0.0095 per Airbnb point (0.95 cents)
+          'DELTA': 0.0065     // $0.0065 per Delta point (0.65 cents)
         };
         
-        const rate = approximateValues[program] || 0.01;
-        return Math.round(balance * rate * 100) / 100; // Rounded to 2 decimal places
+        const rate = standardValues[program] || 0.01; // Default to 1 cent if program not found
+        return Number((balance * rate).toFixed(2)); // Formatted to 2 decimal places
       };
       
       const generateMilestones = (userStats: any, txns: Transaction[]) => {
@@ -395,9 +395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Destination wallet not found" });
       }
       
-      // Direct conversion or via xPoints?
+      // Calculate conversion using standardized rates with xPoints as the base currency
       let amountTo = 0;
       let feeApplied = 0;
+      let conversionPath = "";
+      let effectiveRate = 0;
       
       // Calculate fee - free up to 10,000 points, 0.5% after that
       const FREE_CONVERSION_LIMIT = 10000;
@@ -410,26 +412,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate amount after fee deduction
       const amountAfterFee = data.amount - feeApplied;
       
+      // Get the exchange rate
+      const rate = await storage.getExchangeRate(data.fromProgram, data.toProgram);
+      if (!rate) {
+        return res.status(404).json({ message: "Exchange rate not found" });
+      }
+      
+      // Since we've standardized all exchange rates based on xPoints value,
+      // we can now use a direct conversion, even for cross-program transfers
+      amountTo = amountAfterFee * Number(rate.rate);
+      effectiveRate = Number(rate.rate);
+
+      // For transparency, calculate and log the conversion path
       if (data.fromProgram !== "XPOINTS" && data.toProgram !== "XPOINTS") {
-        // Convert source -> xPoints -> destination
+        // This is a cross-program conversion (e.g., QANTAS → GYG)
+        // Log the equivalent USD value for transparency
         const sourceToXpRate = await storage.getExchangeRate(data.fromProgram, "XPOINTS");
         const xpToDestRate = await storage.getExchangeRate("XPOINTS", data.toProgram);
         
-        if (!sourceToXpRate || !xpToDestRate) {
-          return res.status(404).json({ message: "Exchange rate not found" });
+        if (sourceToXpRate && xpToDestRate) {
+          const xpAmount = amountAfterFee * Number(sourceToXpRate.rate);
+          const dollarValue = xpAmount * 0.01; // 1 xPoint = $0.01
+          
+          conversionPath = `${data.fromProgram} → XPOINTS → ${data.toProgram}`;
+          console.log(`Conversion path: ${conversionPath}`);
+          console.log(`Dollar value of transaction: $${dollarValue.toFixed(2)}`);
         }
-        
-        // Calculate conversion using amount after fee
-        const xpAmount = amountAfterFee * Number(sourceToXpRate.rate);
-        amountTo = xpAmount * Number(xpToDestRate.rate);
-      } else {
-        // Direct conversion
-        const rate = await storage.getExchangeRate(data.fromProgram, data.toProgram);
-        if (!rate) {
-          return res.status(404).json({ message: "Exchange rate not found" });
-        }
-        
-        amountTo = amountAfterFee * Number(rate.rate);
+      } else if (data.fromProgram === "XPOINTS") {
+        conversionPath = `XPOINTS → ${data.toProgram}`;
+        const dollarValue = amountAfterFee * 0.01; // 1 xPoint = $0.01
+        console.log(`Conversion path: ${conversionPath}`);
+        console.log(`Dollar value of transaction: $${dollarValue.toFixed(2)}`);
+      } else { // data.toProgram === "XPOINTS"
+        conversionPath = `${data.fromProgram} → XPOINTS`;
+        const dollarValue = amountTo * 0.01; // 1 xPoint = $0.01
+        console.log(`Conversion path: ${conversionPath}`);
+        console.log(`Dollar value of transaction: $${dollarValue.toFixed(2)}`);
       }
       
       // Update wallet balances
@@ -459,6 +477,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw transactionError; // Re-throw to be caught by the outer catch block
       }
       
+      // Calculate dollar values for user transparency
+      const fromValueInDollars = data.amount * 
+        (data.fromProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.fromProgram));
+      
+      const toValueInDollars = amountTo * 
+        (data.toProgram === "XPOINTS" ? 0.01 : calculateDollarValueRate(data.toProgram));
+        
       res.status(200).json({
         transaction,
         fromBalance: sourceWallet.balance - data.amount,
@@ -469,7 +494,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           originalAmount: data.amount,
           amountAfterFee: amountAfterFee,
           convertedAmount: amountTo,
-          freeLimit: FREE_CONVERSION_LIMIT
+          freeLimit: FREE_CONVERSION_LIMIT,
+          effectiveRate: effectiveRate,
+          conversionPath: conversionPath,
+          fromValueInDollars: Number(fromValueInDollars.toFixed(2)),
+          toValueInDollars: Number(toValueInDollars.toFixed(2)),
+          valueRetained: Number((toValueInDollars / fromValueInDollars * 100).toFixed(2)) + "%"
         }
       });
     } catch (error: any) {
