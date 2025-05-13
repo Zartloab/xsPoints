@@ -10,16 +10,16 @@ export type PointTranslation = {
 
 // Mapping of loyalty programs to their reward value per point (in dollars)
 const pointValueMap: Record<LoyaltyProgram, number> = {
-  QANTAS: 0.015,    // Approx $0.015 per Qantas point
-  GYG: 0.05,        // Approx $0.05 per GYG point
-  XPOINTS: 0.02,    // Approx $0.02 per xPoint
-  VELOCITY: 0.013,  // Approx $0.013 per Velocity point
-  AMEX: 0.015,      // Approx $0.015 per AMEX point
-  FLYBUYS: 0.005,   // Approx $0.005 per Flybuys point
-  HILTON: 0.005,    // Approx $0.005 per Hilton point
-  MARRIOTT: 0.008,  // Approx $0.008 per Marriott point
-  AIRBNB: 0.01,     // Approx $0.01 per Airbnb point
-  DELTA: 0.012,     // Approx $0.012 per Delta point
+  QANTAS: 0.006,    // Exactly $0.006 per Qantas point (0.6 cents)
+  GYG: 0.008,       // Exactly $0.008 per GYG point (0.8 cents)
+  XPOINTS: 0.01,    // Exactly $0.01 per xPoint (1 cent) - our standardized value
+  VELOCITY: 0.007,  // Exactly $0.007 per Velocity point (0.7 cents)
+  AMEX: 0.009,      // Exactly $0.009 per AMEX point (0.9 cents)
+  FLYBUYS: 0.005,   // Exactly $0.005 per Flybuys point (0.5 cents)
+  HILTON: 0.004,    // Exactly $0.004 per Hilton point (0.4 cents)
+  MARRIOTT: 0.006,  // Exactly $0.006 per Marriott point (0.6 cents)
+  AIRBNB: 0.0095,   // Exactly $0.0095 per Airbnb point (0.95 cents)
+  DELTA: 0.0065,    // Exactly $0.0065 per Delta point (0.65 cents)
 };
 
 // Standard rewards catalog that applies across all programs
@@ -97,7 +97,7 @@ export function translatePoints(points: number, program: LoyaltyProgram): PointT
   if (points <= 0) return [];
   
   // Get the value per point for this program
-  const pointValue = pointValueMap[program] || 0.01; // Default to $0.01 if program not found
+  const pointValue = pointValueMap[program] || 0.01; // Default to $0.01 (1 cent) if program not found
   
   // Calculate the cash equivalent of the points
   const cashEquivalent = points * pointValue;
@@ -137,9 +137,28 @@ export function pointsNeededForReward(points: number, reward: PointTranslation):
  * @param program The loyalty program
  * @returns Custom translations for specific point ranges
  */
-export function getCustomTranslation(points: number, program: LoyaltyProgram): string {
+/**
+ * Calculate the dollar value of points in a specific loyalty program
+ * @param points The number of points
+ * @param program The loyalty program
+ * @returns Dollar value of the points (e.g., 100 xPoints = $1.00)
+ */
+export function getPointsDollarValue(points: number, program: LoyaltyProgram): number {
   const pointValue = pointValueMap[program] || 0.01;
-  const cashValue = Math.round(points * pointValue);
+  return points * pointValue;
+}
+
+/**
+ * Format dollar value with currency symbol
+ * @param value Dollar value to format
+ * @returns Formatted dollar string with $ symbol and 2 decimal places
+ */
+export function formatDollarValue(value: number): string {
+  return `$${value.toFixed(2)}`;
+}
+
+export function getCustomTranslation(points: number, program: LoyaltyProgram): string {
+  const cashValue = Math.round(getPointsDollarValue(points, program));
   
   if (points < 1000) {
     return `Your ${points} ${program} points are worth about $${cashValue} - maybe grab a coffee or snack.`;

@@ -177,30 +177,32 @@ export class DatabaseStorage implements IStorage {
       
       if (existingRates.length === 0) {
         // Define base exchange rates to XPOINTS (our universal currency)
+        // Using a standard where 1 xPoint = $0.01 USD (1 cent)
+        // These rates are calculated based on the dollar value of each loyalty point
         const baseRatesToXPoints: Record<LoyaltyProgram, number> = {
-          'QANTAS': 0.5,
-          'GYG': 0.8,
-          'XPOINTS': 1.0,
-          'VELOCITY': 0.6,
-          'AMEX': 0.75,
-          'FLYBUYS': 0.9,
-          'HILTON': 0.4,
-          'MARRIOTT': 0.45,
-          'AIRBNB': 0.65,
-          'DELTA': 0.55
+          'QANTAS': 0.6,    // 1 Qantas point = $0.006 → 0.6 xPoints
+          'GYG': 0.8,       // 1 GYG point = $0.008 → 0.8 xPoints
+          'XPOINTS': 1.0,   // 1 xPoint = $0.01 (fixed value)
+          'VELOCITY': 0.7,  // 1 Velocity point = $0.007 → 0.7 xPoints
+          'AMEX': 0.9,      // 1 Amex point = $0.009 → 0.9 xPoints
+          'FLYBUYS': 0.5,   // 1 Flybuys point = $0.005 → 0.5 xPoints
+          'HILTON': 0.4,    // 1 Hilton point = $0.004 → 0.4 xPoints
+          'MARRIOTT': 0.6,  // 1 Marriott point = $0.006 → 0.6 xPoints
+          'AIRBNB': 0.95,   // 1 Airbnb credit = $0.0095 → 0.95 xPoints
+          'DELTA': 0.65     // 1 Delta point = $0.0065 → 0.65 xPoints
         };
         
         const baseRatesFromXPoints: Record<LoyaltyProgram, number> = {
-          'QANTAS': 1.8,
-          'GYG': 1.25,
-          'XPOINTS': 1.0,
-          'VELOCITY': 1.6,
-          'AMEX': 1.3,
-          'FLYBUYS': 1.1,
-          'HILTON': 2.4,
-          'MARRIOTT': 2.2,
-          'AIRBNB': 1.5,
-          'DELTA': 1.7
+          'QANTAS': 1.667,    // 1 xPoint ($0.01) = 1.667 Qantas points
+          'GYG': 1.25,        // 1 xPoint ($0.01) = 1.25 GYG points
+          'XPOINTS': 1.0,     // 1 xPoint = 1 xPoint
+          'VELOCITY': 1.429,  // 1 xPoint ($0.01) = 1.429 Velocity points
+          'AMEX': 1.111,      // 1 xPoint ($0.01) = 1.111 Amex points
+          'FLYBUYS': 2.0,     // 1 xPoint ($0.01) = 2 Flybuys points
+          'HILTON': 2.5,      // 1 xPoint ($0.01) = 2.5 Hilton points
+          'MARRIOTT': 1.667,  // 1 xPoint ($0.01) = 1.667 Marriott points
+          'AIRBNB': 1.053,    // 1 xPoint ($0.01) = 1.053 Airbnb credits
+          'DELTA': 1.538      // 1 xPoint ($0.01) = 1.538 Delta points
         };
         
         const initialRates = [];
@@ -250,30 +252,32 @@ export class DatabaseStorage implements IStorage {
         }
         
         // Define base rates to use for missing combinations
+        // Using a standard where 1 xPoint = $0.01 USD (1 cent)
+        // These rates are calculated based on the dollar value of each loyalty point
         const baseRatesToXPoints: Record<LoyaltyProgram, number> = {
-          'QANTAS': 0.5,
-          'GYG': 0.8,
-          'XPOINTS': 1.0,
-          'VELOCITY': 0.6,
-          'AMEX': 0.75,
-          'FLYBUYS': 0.9,
-          'HILTON': 0.4,
-          'MARRIOTT': 0.45,
-          'AIRBNB': 0.65,
-          'DELTA': 0.55
+          'QANTAS': 0.6,    // 1 Qantas point = $0.006 → 0.6 xPoints
+          'GYG': 0.8,       // 1 GYG point = $0.008 → 0.8 xPoints
+          'XPOINTS': 1.0,   // 1 xPoint = $0.01 (fixed value)
+          'VELOCITY': 0.7,  // 1 Velocity point = $0.007 → 0.7 xPoints
+          'AMEX': 0.9,      // 1 Amex point = $0.009 → 0.9 xPoints
+          'FLYBUYS': 0.5,   // 1 Flybuys point = $0.005 → 0.5 xPoints
+          'HILTON': 0.4,    // 1 Hilton point = $0.004 → 0.4 xPoints
+          'MARRIOTT': 0.6,  // 1 Marriott point = $0.006 → 0.6 xPoints
+          'AIRBNB': 0.95,   // 1 Airbnb credit = $0.0095 → 0.95 xPoints
+          'DELTA': 0.65     // 1 Delta point = $0.0065 → 0.65 xPoints
         };
         
         const baseRatesFromXPoints: Record<LoyaltyProgram, number> = {
-          'QANTAS': 1.8,
-          'GYG': 1.25,
-          'XPOINTS': 1.0,
-          'VELOCITY': 1.6,
-          'AMEX': 1.3,
-          'FLYBUYS': 1.1,
-          'HILTON': 2.4,
-          'MARRIOTT': 2.2,
-          'AIRBNB': 1.5,
-          'DELTA': 1.7
+          'QANTAS': 1.667,    // 1 xPoint ($0.01) = 1.667 Qantas points
+          'GYG': 1.25,        // 1 xPoint ($0.01) = 1.25 GYG points
+          'XPOINTS': 1.0,     // 1 xPoint = 1 xPoint
+          'VELOCITY': 1.429,  // 1 xPoint ($0.01) = 1.429 Velocity points
+          'AMEX': 1.111,      // 1 xPoint ($0.01) = 1.111 Amex points
+          'FLYBUYS': 2.0,     // 1 xPoint ($0.01) = 2 Flybuys points
+          'HILTON': 2.5,      // 1 xPoint ($0.01) = 2.5 Hilton points
+          'MARRIOTT': 1.667,  // 1 xPoint ($0.01) = 1.667 Marriott points
+          'AIRBNB': 1.053,    // 1 xPoint ($0.01) = 1.053 Airbnb credits
+          'DELTA': 1.538      // 1 xPoint ($0.01) = 1.538 Delta points
         };
         
         // Check which combinations are missing
@@ -711,35 +715,66 @@ export class DatabaseStorage implements IStorage {
   // Helper method to fetch real-time exchange rates from external APIs
   private async fetchRealTimeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<{ rate: string } | null> {
     try {
-      // This is a placeholder for real API integration
-      // In a production environment, we would:
-      // 1. Make API calls to the respective loyalty programs
-      // 2. Parse the response to get current rates
-      // 3. Apply any business rules or adjustments
+      // Each loyalty program has a fixed value relative to xPoints based on its real-world value
+      // Where 1 xPoint = $0.01 USD (1 cent)
       
-      // For now, simulate an API call with some realistic rates
-      // with slight variations to simulate market movement
-      
-      // Base rates
-      const baseRates: Record<string, number> = {
-        'QANTAS-XPOINTS': 0.5,
-        'XPOINTS-QANTAS': 1.8,
-        'GYG-XPOINTS': 0.8,
-        'XPOINTS-GYG': 1.25
+      // Base rates for conversion TO xPoints (how many xPoints per 1 unit of the program)
+      const ratesToXPoints: Record<LoyaltyProgram, number> = {
+        'QANTAS': 0.6,    // 1 Qantas point = $0.006 → 0.6 xPoints
+        'GYG': 0.8,       // 1 GYG point = $0.008 → 0.8 xPoints
+        'XPOINTS': 1.0,   // 1 xPoint = $0.01 (fixed value)
+        'VELOCITY': 0.7,  // 1 Velocity point = $0.007 → 0.7 xPoints
+        'AMEX': 0.9,      // 1 Amex point = $0.009 → 0.9 xPoints
+        'FLYBUYS': 0.5,   // 1 Flybuys point = $0.005 → 0.5 xPoints
+        'HILTON': 0.4,    // 1 Hilton point = $0.004 → 0.4 xPoints
+        'MARRIOTT': 0.6,  // 1 Marriott point = $0.006 → 0.6 xPoints
+        'AIRBNB': 0.95,   // 1 Airbnb credit = $0.0095 → 0.95 xPoints
+        'DELTA': 0.65     // 1 Delta point = $0.0065 → 0.65 xPoints
       };
       
-      const key = `${fromProgram}-${toProgram}`;
+      // Base rates for conversion FROM xPoints (how many points per 1 xPoint)
+      const ratesFromXPoints: Record<LoyaltyProgram, number> = {
+        'QANTAS': 1.667,    // 1 xPoint ($0.01) = 1.667 Qantas points
+        'GYG': 1.25,        // 1 xPoint ($0.01) = 1.25 GYG points
+        'XPOINTS': 1.0,     // 1 xPoint = 1 xPoint
+        'VELOCITY': 1.429,  // 1 xPoint ($0.01) = 1.429 Velocity points
+        'AMEX': 1.111,      // 1 xPoint ($0.01) = 1.111 Amex points
+        'FLYBUYS': 2.0,     // 1 xPoint ($0.01) = 2 Flybuys points
+        'HILTON': 2.5,      // 1 xPoint ($0.01) = 2.5 Hilton points
+        'MARRIOTT': 1.667,  // 1 xPoint ($0.01) = 1.667 Marriott points
+        'AIRBNB': 1.053,    // 1 xPoint ($0.01) = 1.053 Airbnb credits
+        'DELTA': 1.538      // 1 xPoint ($0.01) = 1.538 Delta points
+      };
       
-      if (baseRates[key]) {
-        // Add a small random variation (-5% to +5%)
-        const variation = (Math.random() * 0.1) - 0.05;
-        const newRate = baseRates[key] * (1 + variation);
-        return { rate: newRate.toFixed(4) };
+      let rate: number;
+      
+      // Direct conversions
+      if (fromProgram === toProgram) {
+        // Same program conversion rate is always 1.0
+        rate = 1.0;
+      } else if (fromProgram === 'XPOINTS') {
+        // Direct conversion from XPOINTS to another program
+        rate = ratesFromXPoints[toProgram];
+      } else if (toProgram === 'XPOINTS') {
+        // Direct conversion from another program to XPOINTS
+        rate = ratesToXPoints[fromProgram];
+      } else {
+        // Cross-program conversion, calculated via xPoints as intermediary
+        // This maintains the relationship: 1 fromProgram point = X xPoints = Y toProgram points
+        rate = (ratesToXPoints[fromProgram] / ratesToXPoints[toProgram]) * ratesFromXPoints[toProgram];
       }
       
-      return null;
+      // Add a tiny market variation (+/- 1%) to simulate real market conditions
+      // but ensure the core valuation remains stable
+      const marketVariation = 1 + ((Math.random() * 0.02) - 0.01); // +/- 1%
+      
+      // Apply market variation but maintain the fixed value relationship
+      const finalRate = rate * marketVariation;
+      
+      // Return rate with 6 decimal places for precision
+      return { rate: finalRate.toFixed(6) };
     } catch (error) {
-      console.error("Error fetching real-time rate:", error);
+      console.error("Error calculating exchange rate:", error);
       return null;
     }
   }

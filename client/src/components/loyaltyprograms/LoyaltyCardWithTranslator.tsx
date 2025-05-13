@@ -65,7 +65,14 @@ export default function LoyaltyCardWithTranslator({ wallet, onConvert }: Loyalty
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{showTranslator ? "Hide Points Translator" : "See what your points are worth"}</p>
+              <p>
+                {showTranslator 
+                  ? "Hide Points Translator" 
+                  : wallet.program === "XPOINTS" 
+                    ? "Each xPoint is worth exactly 1¢" 
+                    : "See what your points are worth"
+                }
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
