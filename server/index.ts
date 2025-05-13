@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -48,6 +49,16 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
+  
+  // Initialize exchange rates 
+  try {
+    log("Initializing exchange rates with verification data");
+    const { initializeExchangeRates } = await import('./services/rateVerificationService');
+    await initializeExchangeRates();
+    log("Exchange rates initialization completed");
+  } catch (error) {
+    console.error("Error initializing exchange rates:", error);
+  }
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

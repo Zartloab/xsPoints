@@ -10,7 +10,7 @@ import { chatbotService, ChatMessage } from "./services/chatbotService";
 import { marketInsightsService } from "./services/marketInsightsService";
 import { pointsValuationService } from "./services/pointsValuationService";
 import { tradeAdvisorService } from "./services/tradeAdvisorService";
-import type { Transaction, Wallet } from "@shared/schema";
+import type { Transaction, Wallet, User } from "@shared/schema";
 import { 
   convertPointsSchema, 
   linkAccountSchema, 
@@ -371,6 +371,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching all exchange rates:", error);
       res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+  
+  // Get verified exchange rate with verification data
+  app.get("/api/exchange-rates/verified", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const { from, to } = req.query;
+    
+    try {
+      // Validate input
+      if (!from || !to || typeof from !== 'string' || typeof to !== 'string') {
+        return res.status(400).json({ message: "Invalid parameters" });
+      }
+      
+      // Import the rateVerificationService
+      const { getVerifiedExchangeRate } = await import('./services/rateVerificationService');
+      
+      const verifiedRate = await getVerifiedExchangeRate(
+        from as LoyaltyProgram,
+        to as LoyaltyProgram
+      );
+      
+      if (!verifiedRate) {
+        return res.status(404).json({ message: "Exchange rate not found" });
+      }
+      
+      res.json(verifiedRate);
+    } catch (error) {
+      console.error("Error fetching verified exchange rate:", error);
+      res.status(500).json({ message: "Failed to fetch verified exchange rate" });
+    }
+  });
+  
+  // Get all verified exchange rates with verification data
+  app.get("/api/exchange-rates/verified/all", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Import the rateVerificationService
+      const { getAllVerifiedExchangeRates } = await import('./services/rateVerificationService');
+      
+      const verifiedRates = await getAllVerifiedExchangeRates();
+      
+      if (!verifiedRates || verifiedRates.length === 0) {
+        return res.status(404).json({ message: "No verified exchange rates found" });
+      }
+      
+      res.json(verifiedRates);
+    } catch (error) {
+      console.error("Error fetching all verified exchange rates:", error);
+      res.status(500).json({ message: "Failed to fetch verified exchange rates" });
+    }
+  });
+  
+  // Get all loyalty program information with verification details
+  app.get("/api/loyalty-programs/info", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Import the rateVerificationService
+      const { getLoyaltyProgramsInfo } = await import('./services/rateVerificationService');
+      
+      const programsInfo = await getLoyaltyProgramsInfo();
+      
+      res.json(programsInfo);
+    } catch (error) {
+      console.error("Error fetching loyalty programs info:", error);
+      res.status(500).json({ message: "Failed to fetch loyalty programs information" });
+    }
+  });
+  
+  // Force update of all exchange rates 
+  app.post("/api/exchange-rates/update", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can force rate updates
+    const user = req.user as User;
+    if (user.id !== 1) { // Assuming user ID 1 is admin for simplicity
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      // Import the rateVerificationService
+      const { updateAllExchangeRates } = await import('./services/rateVerificationService');
+      
+      await updateAllExchangeRates();
+      
+      res.json({ message: "Exchange rates updated successfully" });
+    } catch (error) {
+      console.error("Error updating exchange rates:", error);
+      res.status(500).json({ message: "Failed to update exchange rates" });
     }
   });
 
