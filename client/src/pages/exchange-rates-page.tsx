@@ -185,7 +185,7 @@ const ExchangeRatesPage: React.FC = () => {
   });
   
   // Get user wallets
-  const { data: wallets = [] } = useQuery({
+  const { data: wallets = [] } = useQuery<any[]>({
     queryKey: ['/api/wallets'],
     enabled: !!user,
   });
@@ -206,7 +206,7 @@ const ExchangeRatesPage: React.FC = () => {
   
   // Calculate dollar value of holdings
   const calculateHoldingsValue = () => {
-    return wallets.map(wallet => {
+    return wallets.map((wallet: any) => {
       const currencyRate = additionalRates[wallet.program as keyof typeof additionalRates]?.rate || 0.01;
       return {
         program: wallet.program,
@@ -218,7 +218,7 @@ const ExchangeRatesPage: React.FC = () => {
   };
   
   const holdingsValue = calculateHoldingsValue();
-  const totalHoldingsValue = holdingsValue.reduce((sum, holding) => sum + holding.dollarValue, 0);
+  const totalHoldingsValue = holdingsValue.reduce((sum: number, holding: any) => sum + holding.dollarValue, 0);
   
   // Format the current rate for display based on currencies
   const formatComparisonRate = () => {
@@ -634,7 +634,7 @@ const ExchangeRatesPage: React.FC = () => {
                         fill="#8884d8"
                         dataKey="dollarValue"
                       >
-                        {holdingsValue.map((entry, index) => (
+                        {holdingsValue.map((entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -645,7 +645,7 @@ const ExchangeRatesPage: React.FC = () => {
                   </ResponsiveContainer>
                 </div>
                 <div className="mt-4 space-y-2">
-                  {holdingsValue.map((holding) => (
+                  {holdingsValue.map((holding: any) => (
                     <div key={holding.program} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50">
                       <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: holding.color }}></div>
