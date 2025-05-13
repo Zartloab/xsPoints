@@ -251,18 +251,70 @@ export default function PersonalizedDashboard() {
   
   return (
     <section className="mb-8">
-      <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-          {greeting}, {user?.firstName || user?.username || 'User'}!
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Welcome to your personalized xPoints dashboard
-        </p>
+      <div className="mb-8 p-8 bg-gradient-to-r from-blue-100 via-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-md">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {greeting}, {user?.firstName || user?.username || 'User'}!
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Welcome to <span className="font-semibold text-primary">xPoints</span> - The Universal Loyalty Currency
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Convert, manage, and maximize your loyalty points with our unified platform
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0 bg-white/80 p-4 rounded-lg border border-blue-100 shadow-sm">
+            <div className="text-center">
+              <div className="text-xs uppercase tracking-wider text-gray-500 font-medium">xPoints Value</div>
+              <div className="text-3xl font-bold text-blue-600 mt-1">$0.01</div>
+              <div className="text-xs text-gray-500 mt-1">per point</div>
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="border-0 shadow-md overflow-hidden">
+      {/* xPoints Focus Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* xPoints Balance - First and highlighted */}
+        <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-blue-50 to-white col-span-1 sm:col-span-2 order-1">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-r from-primary to-blue-400 h-2"></div>
+            <div className="p-6">
+              <div className="flex flex-col">
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-blue-100 rounded-full text-primary mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-600">Your xPoints Balance</h3>
+                    <p className="text-sm text-gray-500">The universal loyalty currency</p>
+                  </div>
+                </div>
+                <div className="flex items-end justify-between mt-1">
+                  <div>
+                    <h2 className="text-4xl font-bold text-primary">
+                      {wallets.find(w => w.program === 'XPOINTS')?.balance.toLocaleString() || 0}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Value: ${((wallets.find(w => w.program === 'XPOINTS')?.balance || 0) * 0.01).toFixed(2)} USD
+                    </p>
+                  </div>
+                  <Button className="bg-primary hover:bg-blue-700" size="sm">
+                    <Link href="/merchant" className="text-white">
+                      Buy More
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Points - Now less prominent */}
+        <Card className="border-0 shadow-md overflow-hidden order-2 sm:order-3 lg:order-2">
           <CardContent className="p-0">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-2"></div>
             <div className="p-5">
@@ -270,6 +322,7 @@ export default function PersonalizedDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Total Points</p>
                   <h3 className="text-2xl font-bold mt-1 text-gray-800">{totalPoints.toLocaleString()}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Across all programs</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full text-blue-600">
                   <BarChart3 className="h-5 w-5" />
@@ -279,7 +332,8 @@ export default function PersonalizedDashboard() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md overflow-hidden">
+        {/* Monthly Activity */}
+        <Card className="border-0 shadow-md overflow-hidden order-3 sm:order-4 lg:order-3">
           <CardContent className="p-0">
             <div className="bg-gradient-to-br from-green-50 to-green-100 h-2"></div>
             <div className="p-5">
@@ -287,6 +341,7 @@ export default function PersonalizedDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Monthly Activity</p>
                   <h3 className="text-2xl font-bold mt-1 text-gray-800">{userStats?.monthlyPoints || 0}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Points this month</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full text-green-600">
                   <TrendingUp className="h-5 w-5" />
@@ -296,42 +351,39 @@ export default function PersonalizedDashboard() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md overflow-hidden">
+        {/* Merchant Insights - New card focused on business potential */}
+        <Card className="border-0 shadow-md overflow-hidden order-4 sm:order-2 lg:order-4">
           <CardContent className="p-0">
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 h-2"></div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 h-2"></div>
             <div className="p-5">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium">Last Active</p>
-                  <h3 className="text-lg font-bold mt-1 text-gray-800">{lastActiveDate}</h3>
+                  <p className="text-sm text-muted-foreground font-medium">For Businesses</p>
+                  <h3 className="text-lg font-bold mt-1 text-gray-800">Issue xPoints</h3>
+                  <p className="text-xs text-gray-500 mt-1">Reward your customers</p>
                 </div>
-                <div className="p-3 bg-amber-100 rounded-full text-amber-600">
-                  <Calendar className="h-5 w-5" />
+                <div className="p-3 bg-purple-100 rounded-full text-purple-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md overflow-hidden">
-          <CardContent className="p-0">
-            <div className="bg-gradient-to-br from-violet-50 to-violet-100 h-2"></div>
-            <div className="p-5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Programs Linked</p>
-                  <h3 className="text-2xl font-bold mt-1 text-gray-800">{wallets.filter(w => w.accountName || w.accountNumber).length} / {wallets.length}</h3>
-                </div>
-                <div className="p-3 bg-violet-100 rounded-full text-violet-600">
-                  <ExternalLink className="h-5 w-5" />
-                </div>
+              <div className="mt-2">
+                <Button variant="outline" size="sm" className="w-full">
+                  <Link href="/merchant" className="flex items-center w-full justify-center">
+                    Merchant Portal
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Top Programs */}
+      {/* Loyalty Programs with xPoints Emphasis */}
       <Card className="mb-8 border-0 shadow-md overflow-hidden">
         <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
           <div className="flex items-center gap-2">
@@ -339,19 +391,54 @@ export default function PersonalizedDashboard() {
               <Trophy className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Your Top Programs</CardTitle>
+              <CardTitle>Your Loyalty Programs</CardTitle>
               <CardDescription>
-                Summary of your highest-value loyalty program wallets
+                Manage all your programs with xPoints as your central currency
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-5">
           <div className="space-y-6">
+            {/* Always show xPoints first */}
+            {(() => {
+              const xPointsWallet = wallets.find(w => w.program === 'XPOINTS');
+              if (xPointsWallet) {
+                return (
+                  <div className="flex items-center justify-between p-4 rounded-lg transition-colors bg-gradient-to-r from-blue-50 to-white border border-blue-100 shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-blue-100 text-primary border-2 border-blue-200">
+                        <span className="text-xl font-bold">X</span>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-lg text-primary">XPOINTS</h4>
+                        <p className="text-sm text-blue-600 mt-1 flex items-center">
+                          <span className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m9 12 2 2 4-4" />
+                              <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            Universal Loyalty Currency
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-2xl text-primary">{xPointsWallet.balance.toLocaleString()}</div>
+                      <div className="text-xs text-blue-600 mt-1">Worth ${(xPointsWallet.balance * 0.01).toFixed(2)} USD</div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
+            {/* Other programs */}
             {wallets
+              .filter(w => w.program !== 'XPOINTS')
               .sort((a, b) => b.balance - a.balance)
               .slice(0, 3)
-              .map((wallet, index) => (
+              .map((wallet) => (
                 <div key={wallet.id} className="flex items-center justify-between hover:bg-gray-50 p-3 rounded-lg transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getProgramColor(wallet.program as LoyaltyProgram)}`}>
@@ -376,28 +463,37 @@ export default function PersonalizedDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-xl text-gray-800">{wallet.balance.toLocaleString()}</div>
-                    <div className="text-xs text-gray-500 mt-1">points available</div>
+                    <div className="flex items-center justify-end text-xs text-gray-500 mt-1">
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      <Link href="#convert" className="text-blue-600 hover:underline">Convert to xPoints</Link>
+                    </div>
                   </div>
                 </div>
               ))}
           </div>
         </CardContent>
-        <CardFooter className="border-t bg-gray-50 py-3">
-          <Button variant="outline" className="w-full flex gap-2 items-center">
+        <CardFooter className="border-t bg-gray-50 py-3 flex justify-between">
+          <Button variant="outline" className="flex-1 mr-2">
             <Link href="#link" className="flex items-center w-full justify-center">
               <ExternalLink className="h-4 w-4 mr-2" />
-              Manage All Programs
+              Link Programs
+            </Link>
+          </Button>
+          <Button className="flex-1 bg-primary hover:bg-blue-700">
+            <Link href="#convert" className="flex items-center w-full justify-center text-white">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Convert Points
             </Link>
           </Button>
         </CardFooter>
       </Card>
       
-      {/* Personalized Opportunities */}
+      {/* xPoints Opportunities Section */}
       <div>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
             <Lightbulb className="h-5 w-5 text-amber-500" />
-            Personalized Opportunities
+            <span>xPoints <span className="text-primary">Opportunities</span></span>
           </h2>
           <Link href="/explorer">
             <Button variant="outline" size="sm" className="border border-blue-200 shadow-sm">
