@@ -68,6 +68,21 @@ const generateHistoricalRateData = (days: number, baseCurrency: string, targetCu
   const data = [];
   let baseRate = 0;
   
+  // Special case: when converting from same currency to same currency, always show 1:1 ratio
+  if (baseCurrency === targetCurrency) {
+    for (let i = days; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      data.push({
+        date: date.toISOString().split('T')[0],
+        rate: "1.000000", // Always 1:1 for same currency
+        baseRate: "1.000000",
+        volume: Math.floor(Math.random() * 100000) + 50000,
+      });
+    }
+    return data;
+  }
+  
   // Set base rates depending on currency combinations
   if (baseCurrency === 'XPOINTS') {
     baseRate = 0.01; // 1 cent per xPoint
@@ -222,7 +237,10 @@ const ExchangeRatesPage: React.FC = () => {
   
   // Format the current rate for display based on currencies
   const formatComparisonRate = () => {
-    if (targetCurrency === 'USD') {
+    // If converting same currency to same currency, always show 1:1
+    if (baseCurrency === targetCurrency) {
+      return `1 ${baseCurrency} = 1 ${targetCurrency}`;
+    } else if (targetCurrency === 'USD') {
       return `1 ${baseCurrency} = ${formatCurrency(currentRate)}`;
     } else {
       return `1 ${baseCurrency} = ${currentRate.toFixed(4)} ${targetCurrency}`;
@@ -231,6 +249,14 @@ const ExchangeRatesPage: React.FC = () => {
   
   // Generate recommendation text based on rate trends
   const generateRecommendation = () => {
+    // Special case for same currency conversions
+    if (baseCurrency === targetCurrency) {
+      return {
+        text: `Converting between the same currency always maintains a 1:1 ratio. No exchange fees or rate fluctuations apply.`,
+        status: 'positive'
+      };
+    }
+    
     // For demo purposes, provide recommendations based on the exchange direction
     if (baseCurrency === 'XPOINTS') {
       // If converting from xPoints, check if rates are favorable
