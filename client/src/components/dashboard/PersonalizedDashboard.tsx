@@ -23,6 +23,9 @@ import {
   Calendar,
   RefreshCw,
   ExternalLink,
+  Trophy,
+  Check as CheckIcon,
+  Clock,
 } from 'lucide-react';
 import { Wallet, Transaction, LoyaltyProgram } from '@shared/schema';
 
@@ -45,27 +48,73 @@ const OpportunityCard = ({
   badgeText,
   badgeVariant = 'default',
 }: OpportunityCardProps) => {
+  // Define background colors for different badge variants
+  const getBadgeClasses = () => {
+    switch (badgeVariant) {
+      case 'destructive':
+        return 'bg-red-50 text-red-600 border border-red-200';
+      case 'secondary':
+        return 'bg-purple-50 text-purple-600 border border-purple-200';
+      case 'outline':
+        return 'bg-gray-50 text-gray-600 border border-gray-200';
+      default:
+        return 'bg-blue-50 text-blue-600 border border-blue-200';
+    }
+  };
+  
+  // Define background gradient for the card based on badge variant
+  const getCardGradient = () => {
+    switch (badgeVariant) {
+      case 'destructive':
+        return 'from-red-50 to-white';
+      case 'secondary':
+        return 'from-purple-50 to-white';
+      case 'outline':
+        return 'from-gray-50 to-white';
+      default:
+        return 'from-blue-50 to-white';
+    }
+  };
+  
   return (
-    <Card className="overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
+    <Card className="border-0 shadow-md overflow-hidden transition-all hover:-translate-y-1 duration-300">
+      <div className={`h-1.5 bg-gradient-to-r ${
+        badgeVariant === 'destructive' ? 'from-red-400 to-red-300' :
+        badgeVariant === 'secondary' ? 'from-purple-400 to-purple-300' :
+        badgeVariant === 'outline' ? 'from-gray-400 to-gray-300' :
+        'from-blue-400 to-blue-300'
+      }`}></div>
       <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary/10 rounded-full text-primary">
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-start space-x-3">
+            <div className={`p-3 rounded-full ${
+              badgeVariant === 'destructive' ? 'bg-red-100 text-red-500' :
+              badgeVariant === 'secondary' ? 'bg-purple-100 text-purple-500' :
+              badgeVariant === 'outline' ? 'bg-gray-100 text-gray-500' :
+              'bg-blue-100 text-blue-500'
+            }`}>
               {icon}
             </div>
             <div>
-              <h3 className="font-semibold">{title}</h3>
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <h3 className="font-semibold text-gray-800 text-lg">{title}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{description}</p>
             </div>
           </div>
           {badgeText && (
-            <Badge variant={badgeVariant}>{badgeText}</Badge>
+            <Badge className={`${getBadgeClasses()} font-medium px-2.5 py-0.5 text-xs`}>
+              {badgeText}
+            </Badge>
           )}
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="w-full justify-between"
+          className={`w-full justify-between border shadow-sm ${
+            badgeVariant === 'destructive' ? 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50' :
+            badgeVariant === 'secondary' ? 'text-purple-600 hover:text-purple-700 border-purple-200 hover:bg-purple-50' :
+            badgeVariant === 'outline' ? 'text-gray-600 hover:text-gray-700 border-gray-200 hover:bg-gray-50' :
+            'text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50'
+          }`}
           onClick={onClick}
         >
           {action}
@@ -202,68 +251,80 @@ export default function PersonalizedDashboard() {
   
   return (
     <section className="mb-8">
-      <div className="mb-6">
+      <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
           {greeting}, {user?.firstName || user?.username || 'User'}!
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mt-1">
           Welcome to your personalized xPoints dashboard
         </p>
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Points</p>
-                <h3 className="text-2xl font-bold">{totalPoints.toLocaleString()}</h3>
-              </div>
-              <div className="p-2 bg-primary/10 rounded-full text-primary">
-                <BarChart3 className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Activity</p>
-                <h3 className="text-2xl font-bold">{userStats?.monthlyPoints || 0}</h3>
-              </div>
-              <div className="p-2 bg-primary/10 rounded-full text-primary">
-                <TrendingUp className="h-5 w-5" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Card className="border-0 shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-2"></div>
+            <div className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Total Points</p>
+                  <h3 className="text-2xl font-bold mt-1 text-gray-800">{totalPoints.toLocaleString()}</h3>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">Last Active</p>
-                <h3 className="text-lg font-bold">{lastActiveDate}</h3>
-              </div>
-              <div className="p-2 bg-primary/10 rounded-full text-primary">
-                <Calendar className="h-5 w-5" />
+        <Card className="border-0 shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 h-2"></div>
+            <div className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Monthly Activity</p>
+                  <h3 className="text-2xl font-bold mt-1 text-gray-800">{userStats?.monthlyPoints || 0}</h3>
+                </div>
+                <div className="p-3 bg-green-100 rounded-full text-green-600">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">Programs Linked</p>
-                <h3 className="text-2xl font-bold">{wallets.filter(w => w.accountName || w.accountNumber).length} / {wallets.length}</h3>
+        <Card className="border-0 shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 h-2"></div>
+            <div className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Last Active</p>
+                  <h3 className="text-lg font-bold mt-1 text-gray-800">{lastActiveDate}</h3>
+                </div>
+                <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+                  <Calendar className="h-5 w-5" />
+                </div>
               </div>
-              <div className="p-2 bg-primary/10 rounded-full text-primary">
-                <ExternalLink className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-br from-violet-50 to-violet-100 h-2"></div>
+            <div className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Programs Linked</p>
+                  <h3 className="text-2xl font-bold mt-1 text-gray-800">{wallets.filter(w => w.accountName || w.accountNumber).length} / {wallets.length}</h3>
+                </div>
+                <div className="p-3 bg-violet-100 rounded-full text-violet-600">
+                  <ExternalLink className="h-5 w-5" />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -271,59 +332,82 @@ export default function PersonalizedDashboard() {
       </div>
       
       {/* Top Programs */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Your Top Programs</CardTitle>
-          <CardDescription>
-            Summary of your highest-value loyalty program wallets
-          </CardDescription>
+      <Card className="mb-8 border-0 shadow-md overflow-hidden">
+        <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+              <Trophy className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle>Your Top Programs</CardTitle>
+              <CardDescription>
+                Summary of your highest-value loyalty program wallets
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-5">
+          <div className="space-y-6">
             {wallets
               .sort((a, b) => b.balance - a.balance)
               .slice(0, 3)
-              .map((wallet) => (
-                <div key={wallet.id} className="flex items-center justify-between">
+              .map((wallet, index) => (
+                <div key={wallet.id} className="flex items-center justify-between hover:bg-gray-50 p-3 rounded-lg transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getProgramColor(wallet.program as LoyaltyProgram)}`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getProgramColor(wallet.program as LoyaltyProgram)}`}>
                       {wallet.program.charAt(0)}
                     </div>
                     <div>
-                      <h4 className="font-medium">{wallet.program}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {wallet.accountName ? `Connected to ${wallet.accountName}` : 'Not connected'}
+                      <h4 className="font-medium text-gray-800">{wallet.program}</h4>
+                      <p className="text-sm text-muted-foreground mt-1 flex items-center">
+                        {wallet.accountName ? (
+                          <>
+                            <CheckIcon className="h-3 w-3 mr-1 text-green-500" />
+                            <span>Connected to {wallet.accountName}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-3 w-3 mr-1 text-amber-500" />
+                            <span>Not connected</span>
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold">{wallet.balance.toLocaleString()}</span>
-                    <p className="text-xs text-muted-foreground">points</p>
+                    <div className="font-bold text-xl text-gray-800">{wallet.balance.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 mt-1">points available</div>
                   </div>
                 </div>
               ))}
           </div>
         </CardContent>
-        <CardFooter>
-          <Button variant="outline" className="w-full">
-            <Link href="#link">Manage All Programs</Link>
+        <CardFooter className="border-t bg-gray-50 py-3">
+          <Button variant="outline" className="w-full flex gap-2 items-center">
+            <Link href="#link" className="flex items-center w-full justify-center">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Manage All Programs
+            </Link>
           </Button>
         </CardFooter>
       </Card>
       
       {/* Personalized Opportunities */}
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Personalized Opportunities</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
+            <Lightbulb className="h-5 w-5 text-amber-500" />
+            Personalized Opportunities
+          </h2>
           <Link href="/explorer">
-            <Button variant="ghost" size="sm">
+            <Button variant="outline" size="sm" className="border border-blue-200 shadow-sm">
               View All
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {getOpportunities().map((opportunity, index) => (
             <OpportunityCard
               key={index}
