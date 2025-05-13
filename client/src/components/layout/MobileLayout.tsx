@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { Home, Repeat, Wallet, User, BarChart3, Trophy, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MobileFooter from './MobileFooter';
 
 type MobileLayoutProps = {
   children: React.ReactNode;
@@ -49,9 +50,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pt-16 pb-16">
+      <main className="flex-1 overflow-auto pt-16 pb-40">
         {children}
       </main>
+
+      {/* Mobile Footer */}
+      <div className="fixed bottom-16 left-0 right-0 z-40">
+        <MobileFooter />
+      </div>
 
       {/* Mobile Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background z-50">
