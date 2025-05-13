@@ -308,9 +308,16 @@ const ExchangeRatesPage: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Exchange Rate Explorer</h1>
-            <p className="text-gray-600 mb-4 max-w-2xl">
+            <p className="text-gray-600 mb-2 max-w-2xl">
               Track real-time and historical exchange rates between xPoints and other loyalty currencies. Make informed decisions for maximum value.
             </p>
+            <Button variant="link" className="p-0 h-auto text-primary flex items-center gap-1" asChild>
+              <a href="/rate-verification">
+                <ShieldCheck className="h-4 w-4" />
+                <span>View our Rate Verification Policy</span>
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </a>
+            </Button>
           </div>
           <div className="mt-4 md:mt-0">
             <div className="bg-white rounded-lg shadow-sm p-4 border border-blue-100">
