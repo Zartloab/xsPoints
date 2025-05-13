@@ -62,6 +62,18 @@ export default function Header() {
                 Merchant Portal
               </span>
             </Link>
+            <Link href="/marketplace">
+              <span className={`${location === '/marketplace' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer flex items-center`}>
+                <span>Marketplace</span>
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
+              </span>
+            </Link>
+            <Link href="/exchange-rates">
+              <span className={`${location === '/exchange-rates' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer flex items-center`}>
+                <span>Exchange Rates</span>
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
+              </span>
+            </Link>
             <Link href="/explorer">
               <span className={`${location === '/explorer' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>Explorer</span>
             </Link>
@@ -80,9 +92,8 @@ export default function Header() {
               </span>
             </Link>
             <Link href="/loyalty-journey">
-              <span className={`${location === '/loyalty-journey' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer flex items-center`}>
+              <span className={`${location === '/loyalty-journey' ? 'text-primary' : 'text-gray-900 hover:text-primary'} font-medium cursor-pointer`}>
                 <span>Loyalty Journey</span>
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
               </span>
             </Link>
           </nav>

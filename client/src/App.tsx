@@ -19,6 +19,8 @@ import TutorialPage from "@/pages/tutorial-page";
 import GamificationPage from "@/pages/gamification-page";
 import RecommendationsPage from "@/pages/recommendations-page";
 import LoyaltyJourneyPage from "@/pages/loyalty-journey-page";
+import MarketplacePage from "@/pages/marketplace-page";
+import ExchangeRatesPage from "@/pages/exchange-rates-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
@@ -41,6 +43,8 @@ function Router() {
       <ProtectedRoute path="/earn" component={GamificationPage} />
       <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
       <ProtectedRoute path="/loyalty-journey" component={LoyaltyJourneyPage} />
+      <ProtectedRoute path="/marketplace" component={MarketplacePage} />
+      <ProtectedRoute path="/exchange-rates" component={ExchangeRatesPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
