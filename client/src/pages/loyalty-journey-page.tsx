@@ -1,7 +1,19 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
-import { Loader2, Trophy, TrendingUp, LineChart, ChevronRight } from "lucide-react";
+import { 
+  Loader2, 
+  Trophy, 
+  TrendingUp, 
+  LineChart, 
+  ChevronRight, 
+  Check as CheckIcon, 
+  Clock, 
+  Calendar, 
+  Award, 
+  Star, 
+  Medal 
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -517,12 +529,15 @@ export default function LoyaltyJourneyPage() {
           
           {/* Trends Tab */}
           <TabsContent value="trends" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Conversion Trends</CardTitle>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                  Conversion Trends
+                </CardTitle>
                 <CardDescription>Monthly point conversion activity</CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
+              <CardContent className="h-80 p-6">
                 {journeyData.conversionTrends.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
@@ -530,65 +545,122 @@ export default function LoyaltyJourneyPage() {
                         ...item,
                         formattedMonth: formatMonth(item.month)
                       }))}
-                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 10 }}
                     >
-                      <XAxis dataKey="formattedMonth" />
-                      <YAxis />
+                      <defs>
+                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0065FF" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#0065FF" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis 
+                        dataKey="formattedMonth" 
+                        tick={{ fill: '#64748b' }}
+                        axisLine={{ stroke: '#e2e8f0' }}
+                        tickLine={{ stroke: '#e2e8f0' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#64748b' }}
+                        axisLine={{ stroke: '#e2e8f0' }}
+                        tickLine={{ stroke: '#e2e8f0' }}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                      />
                       <Tooltip 
-                        formatter={(value) => value.toLocaleString()}
+                        formatter={(value) => [`${value.toLocaleString()} points`, 'Converted']}
                         labelFormatter={(label) => `Month: ${label}`}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          border: 'none'
+                        }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="amount" 
                         stroke="#0065FF" 
-                        fill="#0065FF" 
-                        fillOpacity={0.3} 
+                        strokeWidth={2}
+                        fill="url(#colorAmount)" 
+                        activeDot={{ r: 6, strokeWidth: 0, fill: '#0065FF' }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No trend data available yet</p>
+                    <div className="text-center">
+                      <LineChart className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-muted-foreground">No trend data available yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Convert points to see your trends over time</p>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
-                <CardDescription>Complete record of your point conversions</CardDescription>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-blue-50 to-white border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                      Transaction History
+                    </CardTitle>
+                    <CardDescription>Complete record of your point conversions</CardDescription>
+                  </div>
+                  <div className="text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-full">
+                    {journeyData.recentTransactions.length} Transactions
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-0">
+                <div className="divide-y">
                   {journeyData.recentTransactions.length > 0 ? (
                     journeyData.recentTransactions.map((tx) => (
-                      <div key={tx.id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center border-b pb-4">
+                      <div key={tx.id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-4 hover:bg-gray-50 transition-colors">
                         <div>
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                            <p className="font-medium">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                            <p className="font-medium text-gray-800">
                               {tx.fromProgram} → {tx.toProgram}
                             </p>
+                            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                              tx.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                              tx.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                            </span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground mt-1 flex items-center">
+                            <Calendar className="h-3 w-3 mr-1 text-gray-400" />
                             {formatDate(tx.timestamp)}
                           </p>
                         </div>
-                        <div className="mt-2 sm:mt-0 sm:text-right">
-                          <p className="font-medium">
+                        <div className="mt-2 sm:mt-0 text-left sm:text-right">
+                          <p className="font-medium text-gray-800">
                             {tx.amountFrom.toLocaleString()} → {tx.amountTo.toLocaleString()}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            Rate: {(tx.amountTo / tx.amountFrom).toFixed(4)}
-                            {tx.feeApplied > 0 && ` | Fee: ${tx.feeApplied.toLocaleString()}`}
-                          </p>
+                          <div className="flex items-center justify-end text-sm text-muted-foreground mt-1">
+                            <span className="mr-2">Rate: {(tx.amountTo / tx.amountFrom).toFixed(4)}</span>
+                            {tx.feeApplied > 0 ? (
+                              <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                                Fee: {tx.feeApplied.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs">
+                                No fee
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-center py-8">No transaction history available</p>
+                    <div className="text-center py-12">
+                      <Award className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-600 font-medium">No transactions yet</p>
+                      <p className="text-sm text-gray-400 mt-1">Your transaction history will appear here</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
