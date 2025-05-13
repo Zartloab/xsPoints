@@ -61,7 +61,7 @@ const promotionSchema = z.object({
 });
 
 // Helper function to get the dollar value rate for a loyalty program
-function calculateDollarValueRate(program: string): number {
+function getStandardDollarRate(program: string): number {
   const standardValues: Record<string, number> = {
     'QANTAS': 0.006,    // $0.006 per Qantas point (0.6 cents)
     'GYG': 0.008,       // $0.008 per GYG point (0.8 cents)
@@ -76,6 +76,11 @@ function calculateDollarValueRate(program: string): number {
   };
   
   return standardValues[program] || 0.01; // Default to 1 cent if program not found
+}
+
+// For backward compatibility
+function calculateDollarValueRate(program: string): number {
+  return getStandardDollarRate(program);
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -213,21 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const calculateDollarValue = (program: string, balance: number) => {
-        // Standard values for each program's point value in dollars
-        const standardValues: Record<string, number> = {
-          'QANTAS': 0.006,    // $0.006 per Qantas point (0.6 cents)
-          'GYG': 0.008,       // $0.008 per GYG point (0.8 cents)
-          'XPOINTS': 0.01,    // $0.01 per xPoint (1 cent) - our standardized value
-          'VELOCITY': 0.007,  // $0.007 per Velocity point (0.7 cents)
-          'AMEX': 0.009,      // $0.009 per AMEX point (0.9 cents)
-          'FLYBUYS': 0.005,   // $0.005 per Flybuys point (0.5 cents)
-          'HILTON': 0.004,    // $0.004 per Hilton point (0.4 cents)
-          'MARRIOTT': 0.006,  // $0.006 per Marriott point (0.6 cents)
-          'AIRBNB': 0.0095,   // $0.0095 per Airbnb point (0.95 cents)
-          'DELTA': 0.0065     // $0.0065 per Delta point (0.65 cents)
-        };
-        
-        const rate = standardValues[program] || 0.01; // Default to 1 cent if program not found
+        // Use our global standardized rate function
+        const rate = getStandardDollarRate(program);
         return Number((balance * rate).toFixed(2)); // Formatted to 2 decimal places
       };
       
@@ -494,25 +486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw transactionError; // Re-throw to be caught by the outer catch block
       }
       
-      // Calculate dollar values for user transparency using standardized values
-      const getStandardRate = (program: string): number => {
-        const standardValues: Record<string, number> = {
-          'QANTAS': 0.006,    // $0.006 per Qantas point (0.6 cents)
-          'GYG': 0.008,       // $0.008 per GYG point (0.8 cents)
-          'XPOINTS': 0.01,    // $0.01 per xPoint (1 cent) - our standardized value
-          'VELOCITY': 0.007,  // $0.007 per Velocity point (0.7 cents)
-          'AMEX': 0.009,      // $0.009 per AMEX point (0.9 cents)
-          'FLYBUYS': 0.005,   // $0.005 per Flybuys point (0.5 cents)
-          'HILTON': 0.004,    // $0.004 per Hilton point (0.4 cents)
-          'MARRIOTT': 0.006,  // $0.006 per Marriott point (0.6 cents)
-          'AIRBNB': 0.0095,   // $0.0095 per Airbnb point (0.95 cents)
-          'DELTA': 0.0065     // $0.0065 per Delta point (0.65 cents)
-        };
-        return standardValues[program] || 0.01; // Default to 1 cent if program not found
-      };
-      
-      const fromPointValue = data.fromProgram === "XPOINTS" ? 0.01 : getStandardRate(data.fromProgram);
-      const toPointValue = data.toProgram === "XPOINTS" ? 0.01 : getStandardRate(data.toProgram);
+      // Calculate dollar values for user transparency using our standardized global rate function
+      const fromPointValue = data.fromProgram === "XPOINTS" ? 0.01 : getStandardDollarRate(data.fromProgram);
+      const toPointValue = data.toProgram === "XPOINTS" ? 0.01 : getStandardDollarRate(data.toProgram);
       
       const fromValueInDollars = data.amount * fromPointValue;
       const toValueInDollars = amountTo * toPointValue;
