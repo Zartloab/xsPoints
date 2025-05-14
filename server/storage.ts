@@ -1058,10 +1058,12 @@ export class MemStorage implements IStorage {
   private wallets: Map<number, Wallet>;
   private transactions: Map<number, Transaction>;
   private exchangeRates: Map<string, ExchangeRate>;
+  private userPreferences: Map<number, UserPreference>;
   currentUserId: number;
   currentWalletId: number;
   currentTransactionId: number;
   currentExchangeRateId: number;
+  currentPreferenceId: number;
   sessionStore: SessionStore;
   
   // Blockchain wallet management methods
@@ -1107,10 +1109,12 @@ export class MemStorage implements IStorage {
     this.wallets = new Map();
     this.transactions = new Map();
     this.exchangeRates = new Map();
+    this.userPreferences = new Map();
     this.currentUserId = 1;
     this.currentWalletId = 1;
     this.currentTransactionId = 1;
     this.currentExchangeRateId = 1;
+    this.currentPreferenceId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
