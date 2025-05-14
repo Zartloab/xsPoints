@@ -1,9 +1,9 @@
 import * as schema from "@shared/schema";
 import { 
-  users, transactions, userPreferences, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
+  users, transactions, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
   type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData,
-  type TradeOffer, type TradeTransaction, type UserPreference, type InsertUserPreference
+  type TradeOffer, type TradeTransaction
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -68,11 +68,6 @@ export interface IStorage {
   // Blockchain and tokenization operations
   getAllUserTokenBalances(): Promise<{ id: number, tokenBalance: number | null }[]>;
   getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]>;
-  
-  // User preferences operations
-  getUserPreferences(userId: number): Promise<UserPreference | undefined>;
-  createUserPreferences(data: InsertUserPreference): Promise<UserPreference>;
-  updateUserPreferences(userId: number, data: Partial<InsertUserPreference>): Promise<UserPreference>;
   
   // Session store
   sessionStore: SessionStore;
@@ -190,65 +185,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // User Preferences Methods
-  async getUserPreferences(userId: number): Promise<UserPreference | undefined> {
-    try {
-      const [preferences] = await db
-        .select()
-        .from(userPreferences)
-        .where(eq(userPreferences.userId, userId));
-      
-      return preferences;
-    } catch (error) {
-      console.error("Error fetching user preferences:", error);
-      return undefined;
-    }
-  }
-  
-  async createUserPreferences(data: InsertUserPreference): Promise<UserPreference> {
-    try {
-      const [preferences] = await db
-        .insert(userPreferences)
-        .values(data)
-        .returning();
-      
-      return preferences;
-    } catch (error) {
-      console.error("Error creating user preferences:", error);
-      throw error;
-    }
-  }
-  
-  async updateUserPreferences(userId: number, data: Partial<InsertUserPreference>): Promise<UserPreference> {
-    try {
-      // First check if preferences exist
-      const existingPrefs = await this.getUserPreferences(userId);
-      
-      if (existingPrefs) {
-        // Update existing preferences
-        const [updated] = await db
-          .update(userPreferences)
-          .set({
-            ...data,
-            updatedAt: new Date()
-          })
-          .where(eq(userPreferences.userId, userId))
-          .returning();
-        
-        return updated;
-      } else {
-        // Create new preferences if they don't exist
-        return this.createUserPreferences({
-          userId,
-          favoritePrograms: data.favoritePrograms || [],
-          dashboardLayout: data.dashboardLayout || []
-        });
-      }
-    } catch (error) {
-      console.error("Error updating user preferences:", error);
-      throw error;
-    }
-  }
+  // User Preferences Methods removed
   
   // Rest of the methods implementation...
   // ...
@@ -260,12 +197,10 @@ export class MemStorage implements IStorage {
   private wallets: Map<number, Wallet>;
   private transactions: Map<number, Transaction>;
   private exchangeRates: Map<string, ExchangeRate>;
-  private userPreferences: Map<number, UserPreference>;
   currentUserId: number;
   currentWalletId: number;
   currentTransactionId: number;
   currentExchangeRateId: number;
-  currentPreferenceId: number;
   sessionStore: SessionStore;
   
   constructor() {
