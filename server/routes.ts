@@ -20,16 +20,11 @@ import {
   businessIssuePointsSchema,
   createTradeOfferSchema,
   acceptTradeOfferSchema,
-  insertUserPreferencesSchema,
   type LoyaltyProgram 
 } from "@shared/schema";
 import { z } from 'zod';
 
-// Custom schema for user preferences update
-const updateUserPreferencesSchema = z.object({
-  favoritePrograms: z.array(z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"])).optional(),
-  dashboardLayout: z.array(z.string()).optional(),
-});
+// User preferences implementation removed
 
 // Define interfaces for tokenization and explorer features
 interface TokenLedgerEntry {
@@ -1742,48 +1737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to generate test recommendations", error: (error as Error).message });
     }
   });
-  
-  // ===== USER PREFERENCES =====
-  
-  // Get user preferences
-  app.get("/api/user/preferences", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const preferences = await storage.getUserPreferences(req.user!.id);
-      if (!preferences) {
-        // If no preferences exist yet, return default empty values
-        return res.json({
-          favoritePrograms: [],
-          dashboardLayout: []
-        });
-      }
-      return res.json(preferences);
-    } catch (error) {
-      console.error("Error fetching user preferences:", error);
-      res.status(500).json({ message: "Failed to fetch user preferences" });
-    }
-  });
-  
-  // Update user preferences
-  app.put("/api/user/preferences", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const data = updateUserPreferencesSchema.parse(req.body);
-      
-      const updatedPreferences = await storage.updateUserPreferences(req.user!.id, data);
-      return res.json(updatedPreferences);
-    } catch (error) {
-      console.error("Error updating user preferences:", error);
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
-      }
-      
-      res.status(500).json({ message: "Failed to update user preferences" });
-    }
-  });
+  // User preference routes removed
   
   // Create HTTP server
   const httpServer = createServer(app);
