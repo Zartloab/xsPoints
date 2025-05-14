@@ -61,7 +61,6 @@ export default function DashboardPreferences() {
       toast({
         title: "Preferences Updated",
         description: "Your dashboard layout has been saved successfully.",
-        variant: "success",
       });
       setIsOpen(false);
     },
