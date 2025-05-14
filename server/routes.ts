@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, ensureAdmin } from "./auth";
 import apiRouter from "./api";
 import docsRouter from "./api/docs";
 import { tokenService } from "./blockchain/tokenService";
@@ -20,8 +20,12 @@ import {
   businessIssuePointsSchema,
   createTradeOfferSchema,
   acceptTradeOfferSchema,
-  type LoyaltyProgram 
+  type LoyaltyProgram,
+  users,
+  exchangeRates
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, ne, or } from "drizzle-orm";
 import { z } from 'zod';
 
 // User preferences implementation removed
@@ -1211,6 +1215,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ADMIN FEATURES =====
+  
+  // Admin route to get all users
+  app.get("/api/admin/users", ensureAdmin, async (req, res) => {
+    try {
+      // Get all users from storage
+      const allUsers = await db.select().from(users);
+      
+      // Remove sensitive information
+      const safeUsers = allUsers.map(user => {
+        const { password, walletPrivateKey, ...safeUser } = user;
+        return safeUser;
+      });
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin route to get all exchange rates
+  app.get("/api/admin/exchange-rates", ensureAdmin, async (req, res) => {
+    try {
+      // Get all exchange rates
+      const allRates = await db.select().from(exchangeRates);
+      res.json(allRates);
+    } catch (error) {
+      console.error("Error fetching all exchange rates:", error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+
+  // Admin route to update an exchange rate
+  app.post("/api/admin/exchange-rates", ensureAdmin, async (req, res) => {
+    try {
+      const { fromProgram, toProgram, rate } = req.body;
+      
+      if (!fromProgram || !toProgram || !rate) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check if rate already exists
+      const existingRate = await storage.getExchangeRate(fromProgram, toProgram);
+      
+      if (existingRate) {
+        // Update existing rate
+        const [updatedRate] = await db
+          .update(exchangeRates)
+          .set({ 
+            rate: rate.toString(),
+            lastUpdated: new Date()
+          })
+          .where(
+            and(
+              eq(exchangeRates.fromProgram, fromProgram),
+              eq(exchangeRates.toProgram, toProgram)
+            )
+          )
+          .returning();
+        
+        res.json(updatedRate);
+      } else {
+        // Create new rate
+        const [newRate] = await db
+          .insert(exchangeRates)
+          .values({
+            fromProgram,
+            toProgram,
+            rate: rate.toString(),
+            lastUpdated: new Date()
+          })
+          .returning();
+        
+        res.status(201).json(newRate);
+      }
+    } catch (error) {
+      console.error("Error updating exchange rate:", error);
+      res.status(500).json({ message: "Failed to update exchange rate" });
+    }
+  });
+
+  // Admin route to get user details
+  app.get("/api/admin/users/:id", ensureAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Get user details
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Remove sensitive information
+      const { password, walletPrivateKey, ...safeUser } = user;
+      
+      // Get user's wallets
+      const wallets = await storage.getUserWallets(userId);
+      
+      // Get user's transactions
+      const transactions = await storage.getUserTransactions(userId);
+      
+      res.json({
+        user: safeUser,
+        wallets,
+        transactions
+      });
+    } catch (error) {
+      console.error(`Error fetching user details for ${req.params.id}:`, error);
+      res.status(500).json({ message: "Failed to fetch user details" });
+    }
+  });
+
+  // Admin route to update a user
+  app.put("/api/admin/users/:id", ensureAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { membershipTier, kycVerified } = req.body;
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update the user
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          ...(membershipTier && { membershipTier }),
+          ...(kycVerified && { kycVerified })
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      // Remove sensitive information
+      const { password, walletPrivateKey, ...safeUser } = updatedUser;
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error(`Error updating user ${req.params.id}:`, error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+  
   // ===== BUSINESS LOYALTY PROGRAM FEATURES =====
   
   // Get user's businesses

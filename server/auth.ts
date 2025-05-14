@@ -29,6 +29,21 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Middleware to ensure user has admin role
+export function ensureAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  // Check if user is an admin (username is "admin" for now)
+  // In a real application, you would check a role field in the user object
+  if (req.user.username !== "admin") {
+    return res.status(403).json({ message: "Not authorized, admin access required" });
+  }
+  
+  next();
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "xpoints-exchange-secret",
