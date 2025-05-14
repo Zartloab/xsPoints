@@ -266,10 +266,22 @@ export default function ConversionForm() {
     <section id="convert" className="mb-12 bg-white rounded-xl shadow-md p-6 border border-gray-100">
       <h2 className="text-xl font-bold text-gray-900 mb-6">Convert Points</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 relative">
+        {/* Arrow between sections - only visible on desktop */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 border border-blue-100 z-10">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </div>
+        
         {/* From Section */}
         <div className="conversion-arrow relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            From
+          </label>
           <div className="border border-gray-300 rounded-lg overflow-hidden">
             <div className="flex items-center p-3 border-b border-gray-200">
               <div className="flex-grow">
@@ -318,13 +330,22 @@ export default function ConversionForm() {
                 <div className="flex items-center">
                   <input 
                     type="number" 
-                    className="w-full text-lg font-semibold focus:outline-none"
+                    className="w-full text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-100 rounded-md px-2 py-1 transition-all"
                     placeholder="0"
                     value={amount || ''}
                     onChange={(e) => setAmount(Number(e.target.value))}
                     min={0}
                     max={sourceWallet?.balance || 0}
                   />
+                  {sourceWallet && (
+                    <button 
+                      type="button"
+                      onClick={() => setAmount(sourceWallet.balance)}
+                      className="text-xs text-blue-600 hover:text-blue-800 ml-2 transition-colors bg-blue-50 hover:bg-blue-100 rounded-full px-2 py-0.5"
+                    >
+                      Max
+                    </button>
+                  )}
                   <span className="text-gray-500 ml-2">points</span>
                 </div>
               </div>
@@ -346,7 +367,12 @@ export default function ConversionForm() {
         
         {/* To Section */}
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18m-6 4v1a3 3 0 003 3h4a3 3 0 003-3V7a3 3 0 00-3-3h-4a3 3 0 00-3 3v1" />
+            </svg>
+            To
+          </label>
           <div className="border border-gray-300 rounded-lg overflow-hidden">
             <div className="flex items-center p-3 border-b border-gray-200">
               <div className="flex-grow">
