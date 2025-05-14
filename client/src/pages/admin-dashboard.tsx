@@ -46,13 +46,13 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
-  const [users, setUsers] = useState([]);
-  const [exchangeRates, setExchangeRates] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [userDetails, setUserDetails] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [userDetails, setUserDetails] = useState<any | null>(null);
   const [isEditingRate, setIsEditingRate] = useState(false);
-  const [rateToEdit, setRateToEdit] = useState(null);
+  const [rateToEdit, setRateToEdit] = useState<any | null>(null);
   
   // For rate editing form
   const [fromProgram, setFromProgram] = useState("");
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
   }, []);
 
   // Fetch user details
-  const fetchUserDetails = async (userId) => {
+  const fetchUserDetails = async (userId: number) => {
     try {
       setSelectedUser(userId);
       const response = await apiRequest("GET", `/api/admin/users/${userId}`);

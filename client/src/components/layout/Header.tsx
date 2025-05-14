@@ -266,6 +266,19 @@ export default function Header() {
                   Merchant Portal
                 </DropdownMenuItem>
               </Link>
+              
+              {user && user.username === 'admin' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Administration</DropdownMenuLabel>
+                  <Link href="/admin">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <BarChart3 size={16} className="mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  </Link>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -299,6 +312,16 @@ export default function Header() {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {user.username === 'admin' && (
+                  <>
+                    <Link href="/admin">
+                      <DropdownMenuItem className="cursor-pointer">
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   Log out
                 </DropdownMenuItem>
