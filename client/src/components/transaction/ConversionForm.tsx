@@ -393,7 +393,15 @@ export default function ConversionForm() {
               <div className="mb-2">
                 <label className="block text-xs text-gray-500 mb-1">You'll receive</label>
                 <div className="flex items-center">
-                  <div className="w-full text-lg font-semibold">{calculatedAmount.toLocaleString()}</div>
+                  {calculatedAmount > 0 ? (
+                    <AnimatedValueTooltip program={toProgram} points={calculatedAmount}>
+                      <div className="w-full text-lg font-semibold cursor-help hover:text-opacity-80 transition-all">
+                        {calculatedAmount.toLocaleString()}
+                      </div>
+                    </AnimatedValueTooltip>
+                  ) : (
+                    <div className="w-full text-lg font-semibold">0</div>
+                  )}
                   <span className="text-gray-500 ml-2">points</span>
                 </div>
               </div>
@@ -420,25 +428,17 @@ export default function ConversionForm() {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Amount</span>
-              <span className="text-sm font-medium">
-                {amount.toLocaleString()} {
-                  (() => {
-                    switch (fromProgram) {
-                      case 'QANTAS': return 'Qantas';
-                      case 'GYG': return 'GYG';
-                      case 'XPOINTS': return 'xPoints';
-                      case 'VELOCITY': return 'Velocity';
-                      case 'AMEX': return 'American Express';
-                      case 'FLYBUYS': return 'Flybuys';
-                      case 'HILTON': return 'Hilton';
-                      case 'MARRIOTT': return 'Marriott';
-                      case 'AIRBNB': return 'Airbnb';
-                      case 'DELTA': return 'Delta';
-                      default: return fromProgram;
-                    }
-                  })()
-                } Points
-              </span>
+              {amount > 0 ? (
+                <AnimatedValueTooltip program={fromProgram} points={amount}>
+                  <span className="text-sm font-medium cursor-help hover:text-blue-600 transition-colors">
+                    {amount.toLocaleString()} {getDisplayProgramName(fromProgram)} Points
+                  </span>
+                </AnimatedValueTooltip>
+              ) : (
+                <span className="text-sm font-medium">
+                  0 {getDisplayProgramName(fromProgram)} Points
+                </span>
+              )}
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Exchange Rate</span>
@@ -475,25 +475,17 @@ export default function ConversionForm() {
             </div>
             <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
               <span className="text-sm font-medium text-gray-700">You'll receive</span>
-              <span className="text-sm font-bold text-primary-600">
-                {calculatedAmount.toLocaleString()} {
-                  (() => {
-                    switch (toProgram) {
-                      case 'QANTAS': return 'Qantas';
-                      case 'GYG': return 'GYG';
-                      case 'XPOINTS': return 'xPoints';
-                      case 'VELOCITY': return 'Velocity';
-                      case 'AMEX': return 'American Express';
-                      case 'FLYBUYS': return 'Flybuys';
-                      case 'HILTON': return 'Hilton';
-                      case 'MARRIOTT': return 'Marriott';
-                      case 'AIRBNB': return 'Airbnb';
-                      case 'DELTA': return 'Delta';
-                      default: return toProgram;
-                    }
-                  })()
-                } Points
-              </span>
+              {calculatedAmount > 0 ? (
+                <AnimatedValueTooltip program={toProgram} points={calculatedAmount}>
+                  <span className="text-sm font-bold text-primary-600 cursor-help hover:text-opacity-80 transition-all">
+                    {calculatedAmount.toLocaleString()} {getDisplayProgramName(toProgram)} Points
+                  </span>
+                </AnimatedValueTooltip>
+              ) : (
+                <span className="text-sm font-bold text-primary-600">
+                  0 {getDisplayProgramName(toProgram)} Points
+                </span>
+              )}
             </div>
           </div>
         </div>
