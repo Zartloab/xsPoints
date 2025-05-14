@@ -3,12 +3,16 @@ import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
 import MobileFooter from './MobileFooter';
+import QuickConvertWidget from '../widgets/QuickConvertWidget';
+import { useAuth } from '@/hooks/use-auth';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -17,6 +21,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {children}
         </div>
       </main>
+      {user && <QuickConvertWidget />}
       <MobileFooter />
       <MobileNav />
       <Footer />

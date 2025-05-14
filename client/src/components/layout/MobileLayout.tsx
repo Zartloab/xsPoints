@@ -3,6 +3,8 @@ import { Link, useLocation } from 'wouter';
 import { Home, Repeat, Wallet, User, BarChart3, Trophy, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MobileFooter from './MobileFooter';
+import QuickConvertWidget from '../widgets/QuickConvertWidget';
+import { useAuth } from '@/hooks/use-auth';
 
 type MobileLayoutProps = {
   children: React.ReactNode;
@@ -10,6 +12,7 @@ type MobileLayoutProps = {
 
 const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   const navItems = [
     { icon: Home, label: 'Home', href: '/' },
@@ -53,6 +56,9 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       <main className="flex-1 overflow-auto pt-16 pb-40">
         {children}
       </main>
+
+      {/* Quick Convert Widget */}
+      {user && <QuickConvertWidget />}
 
       {/* Mobile Footer */}
       <div className="fixed bottom-16 left-0 right-0 z-40">
