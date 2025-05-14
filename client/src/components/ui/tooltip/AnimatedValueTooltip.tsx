@@ -1,13 +1,7 @@
 import React from 'react';
 import { Banknote, ShoppingBag, Plane, Coffee, Hotel, Car, Gift } from 'lucide-react';
 import { LoyaltyProgram } from '@shared/schema';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-  TooltipPortal,
-} from "@radix-ui/react-tooltip";
+import * as RadixTooltip from "@radix-ui/react-tooltip";
 
 interface ProgramIllustration {
   icon: React.ElementType;
@@ -173,90 +167,88 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
     .slice(0, 2);
   
   return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="cursor-help">
-            {children}
-          </span>
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent 
-            side="top" 
-            className="w-72 p-0 bg-white shadow-lg rounded-xl border-0 z-[100]"
-            sideOffset={10}
-            collisionPadding={20}
+    <RadixTooltip.Provider delayDuration={100}>
+      <RadixTooltip.Root>
+        <RadixTooltip.Trigger asChild>
+          <span className="cursor-help">{children}</span>
+        </RadixTooltip.Trigger>
+        <RadixTooltip.Portal>
+          <RadixTooltip.Content 
+            className="w-72 p-0 bg-white shadow-xl rounded-xl z-[9999] animate-in fade-in-50"
+            sideOffset={5}
+            side="top"
           >
-          <div className="overflow-hidden rounded-xl">
-            {/* Header */}
-            <div
-              className="p-4 text-white flex items-center"
-              style={{ background: illustration.color }}
-            >
-              <div className="bg-white/20 p-2 rounded-full mr-3">
-                {React.createElement(illustration.icon, { size: 20 })}
-              </div>
-              <div>
-                <h3 className="font-bold text-sm">{illustration.label}</h3>
-                <p className="text-xs opacity-90">Estimated value</p>
-              </div>
-            </div>
-            
-            {/* Value */}
-            <div className="p-4 bg-gray-50 border-b">
-              <div className="flex items-center justify-between">
+            <div className="overflow-hidden rounded-xl">
+              {/* Header */}
+              <div
+                className="p-4 text-white flex items-center"
+                style={{ background: illustration.color }}
+              >
+                <div className="bg-white/20 p-2 rounded-full mr-3">
+                  {React.createElement(illustration.icon, { size: 20 })}
+                </div>
                 <div>
-                  <span className="text-gray-500 text-sm">Points</span>
-                  <div className="font-bold text-xl">{points.toLocaleString()}</div>
-                </div>
-                <div className="text-right">
-                  <span className="text-gray-500 text-sm">Value</span>
-                  <div className="font-bold text-xl text-green-600">
-                    {dollarValue}
-                  </div>
+                  <h3 className="font-bold text-sm">{illustration.label}</h3>
+                  <p className="text-xs opacity-90">Estimated value</p>
                 </div>
               </div>
-            </div>
-            
-            {/* Examples section */}
-            <div className="p-4">
-              <h4 className="text-sm text-gray-500 mb-2">What you could get:</h4>
               
-              <div className="space-y-3">
-                {relevantExamples.map((example, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center"
-                  >
-                    <div 
-                      className="p-2 rounded-full mr-3 text-white" 
-                      style={{ background: illustration.color }}
-                    >
-                      {React.createElement(example.icon, { size: 16 })}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{example.label}</div>
-                      <div className="text-xs text-gray-500">
-                        ~{example.value.toLocaleString()} points
-                      </div>
-                    </div>
-                    {points >= example.value ? (
-                      <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Enough!
-                      </div>
-                    ) : (
-                      <div className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
-                        {Math.floor((points / example.value) * 100)}% there
-                      </div>
-                    )}
+              {/* Value */}
+              <div className="p-4 bg-gray-50 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-gray-500 text-sm">Points</span>
+                    <div className="font-bold text-xl">{points.toLocaleString()}</div>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <span className="text-gray-500 text-sm">Value</span>
+                    <div className="font-bold text-xl text-green-600">
+                      {dollarValue}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Examples section */}
+              <div className="p-4">
+                <h4 className="text-sm text-gray-500 mb-2">What you could get:</h4>
+                
+                <div className="space-y-3">
+                  {relevantExamples.map((example, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center"
+                    >
+                      <div 
+                        className="p-2 rounded-full mr-3 text-white" 
+                        style={{ background: illustration.color }}
+                      >
+                        {React.createElement(example.icon, { size: 16 })}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{example.label}</div>
+                        <div className="text-xs text-gray-500">
+                          ~{example.value.toLocaleString()} points
+                        </div>
+                      </div>
+                      {points >= example.value ? (
+                        <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          Enough!
+                        </div>
+                      ) : (
+                        <div className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                          {Math.floor((points / example.value) * 100)}% there
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
+            <RadixTooltip.Arrow className="fill-white" />
+          </RadixTooltip.Content>
+        </RadixTooltip.Portal>
+      </RadixTooltip.Root>
+    </RadixTooltip.Provider>
   );
 };
