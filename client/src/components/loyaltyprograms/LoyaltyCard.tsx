@@ -228,7 +228,8 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
             onClick={() => onConvert(wallet.program)}
             className={`${isXpoints ? 'text-blue-600 hover:text-blue-700' : cardDesign.buttonColor} 
               ${isXpoints ? 'hover:bg-blue-50' : cardDesign.buttonBg} 
-              text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors`}
+              text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-all duration-200
+              transform hover:scale-105 hover:shadow-sm`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -238,7 +239,8 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
           {isXpoints ? (
             <button 
               type="button"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm font-medium flex items-center px-3 py-1.5 rounded-lg 
+                transition-all duration-200 transform hover:scale-105 hover:shadow-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -248,9 +250,11 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
           ) : (
             <button 
               type="button"
-              className={`${cardDesign.buttonColor} ${cardDesign.buttonBg} text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors`}
+              onClick={() => window.location.reload()}
+              className={`${cardDesign.buttonColor} ${cardDesign.buttonBg} text-sm font-medium flex items-center px-3 py-1.5 rounded-lg
+                transition-all duration-200 transform hover:scale-105 hover:shadow-sm`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 transition-transform duration-700 hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Refresh

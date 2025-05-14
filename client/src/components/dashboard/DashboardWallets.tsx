@@ -46,7 +46,12 @@ export default function DashboardWallets() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M3 12h18M3 18h18" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Your Wallet</h2>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Your Wallet</h2>
+                {isLoading && (
+                  <p className="text-xs text-blue-600 animate-pulse">Syncing your latest balances...</p>
+                )}
+              </div>
             </div>
             <div className="flex items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-blue-100">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

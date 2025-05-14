@@ -174,9 +174,11 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
         </RadixTooltip.Trigger>
         <RadixTooltip.Portal>
           <RadixTooltip.Content 
-            className="w-72 p-0 bg-white shadow-xl rounded-xl z-[9999] animate-in fade-in-50"
+            className="w-72 p-0 bg-white shadow-xl rounded-xl z-[9999] animate-in fade-in-50 data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade"
             sideOffset={5}
             side="top"
+            collisionPadding={10}
+            avoidCollisions={true}
           >
             <div className="overflow-hidden rounded-xl">
               {/* Header */}
