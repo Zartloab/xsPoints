@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import ProgramIcon from '../loyaltyprograms/ProgramIcon';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { AnimatedValueTooltip } from '@/components/ui/tooltip/AnimatedValueTooltip';
 
 // Helper function to get display name for loyalty programs
 const getDisplayProgramName = (program: string): string => {
@@ -304,7 +305,11 @@ export default function ConversionForm() {
                 </Select>
               </div>
               <div className="ml-3 px-2 py-1 bg-gray-100 rounded-md text-xs text-gray-700">
-                <span>{sourceWallet?.balance.toLocaleString() || 0}</span> points
+                <AnimatedValueTooltip program={fromProgram} points={sourceWallet?.balance || 0}>
+                  <span className="cursor-help hover:text-blue-600 transition-colors">
+                    {sourceWallet?.balance.toLocaleString() || 0}
+                  </span>
+                </AnimatedValueTooltip> points
               </div>
             </div>
             <div className="p-4">
@@ -377,7 +382,11 @@ export default function ConversionForm() {
                 </Select>
               </div>
               <div className="ml-3 px-2 py-1 bg-gray-100 rounded-md text-xs text-gray-700">
-                <span>{destWallet?.balance.toLocaleString() || 0}</span> points
+                <AnimatedValueTooltip program={toProgram} points={destWallet?.balance || 0}>
+                  <span className="cursor-help hover:text-blue-600 transition-colors">
+                    {destWallet?.balance.toLocaleString() || 0}
+                  </span>
+                </AnimatedValueTooltip> points
               </div>
             </div>
             <div className="p-4">

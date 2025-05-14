@@ -253,7 +253,14 @@ export default function QuickConvertWidget() {
                       </Select>
                       
                       <div className="flex items-center mt-2">
-                        <div className="text-xs text-gray-500">Balance: {getFromProgramBalance()}</div>
+                        <div className="text-xs text-gray-500">
+                          Balance: 
+                          <AnimatedValueTooltip program={fromProgram} points={sourceWallet?.balance || 0}>
+                            <span className="cursor-help ml-1 hover:text-blue-600 transition-all">
+                              {getFromProgramBalance()}
+                            </span>
+                          </AnimatedValueTooltip>
+                        </div>
                       </div>
                       
                       <div className="mt-2">
@@ -306,13 +313,26 @@ export default function QuickConvertWidget() {
                       </Select>
                       
                       <div className="flex items-center mt-2">
-                        <div className="text-xs text-gray-500">Balance: {getToProgramBalance()}</div>
+                        <div className="text-xs text-gray-500">
+                          Balance: 
+                          <AnimatedValueTooltip program={toProgram} points={destWallet?.balance || 0}>
+                            <span className="cursor-help ml-1 hover:text-blue-600 transition-all">
+                              {getToProgramBalance()}
+                            </span>
+                          </AnimatedValueTooltip>
+                        </div>
                       </div>
                       
                       <div className="mt-2">
-                        <div className="text-lg font-semibold">
-                          {calculatedAmount ? calculatedAmount.toLocaleString() : '0'}
-                        </div>
+                        {calculatedAmount > 0 ? (
+                          <AnimatedValueTooltip program={toProgram} points={calculatedAmount}>
+                            <div className="text-lg font-semibold cursor-help hover:text-opacity-80 transition-all">
+                              {calculatedAmount.toLocaleString()}
+                            </div>
+                          </AnimatedValueTooltip>
+                        ) : (
+                          <div className="text-lg font-semibold">0</div>
+                        )}
                       </div>
                     </div>
                   </div>
