@@ -1,9 +1,9 @@
 import * as schema from "@shared/schema";
 import { 
-  users, transactions, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
+  users, transactions, userPreferences, type User, type InsertUser, type Wallet, type Transaction, type ExchangeRate, 
   type LoyaltyProgram, type TierBenefit, type InsertTierBenefits, type MembershipTier,
   type BusinessAnalytics, type InsertBusinessAnalytics, type BulkPointIssuanceData,
-  type TradeOffer, type TradeTransaction
+  type TradeOffer, type TradeTransaction, type UserPreference, type InsertUserPreference
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -68,6 +68,11 @@ export interface IStorage {
   // Blockchain and tokenization operations
   getAllUserTokenBalances(): Promise<{ id: number, tokenBalance: number | null }[]>;
   getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]>;
+  
+  // User preferences operations
+  getUserPreferences(userId: number): Promise<UserPreference | undefined>;
+  createUserPreferences(data: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreferences(userId: number, data: Partial<InsertUserPreference>): Promise<UserPreference>;
   
   // Session store
   sessionStore: SessionStore;
@@ -1359,6 +1364,57 @@ export class MemStorage implements IStorage {
       }
     });
     return result;
+  }
+  
+  // User Preferences Methods
+  async getUserPreferences(userId: number): Promise<UserPreference | undefined> {
+    try {
+      const [preferences] = await db
+        .select()
+        .from(schema.userPreferences)
+        .where(eq(schema.userPreferences.userId, userId));
+      
+      return preferences;
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+      return undefined;
+    }
+  }
+  
+  async createUserPreferences(data: InsertUserPreference): Promise<UserPreference> {
+    const [preferences] = await db
+      .insert(schema.userPreferences)
+      .values(data)
+      .returning();
+    
+    return preferences;
+  }
+  
+  async updateUserPreferences(userId: number, data: Partial<InsertUserPreference>): Promise<UserPreference> {
+    // First check if preferences exist
+    const existingPrefs = await this.getUserPreferences(userId);
+    
+    if (existingPrefs) {
+      // Update existing preferences
+      const [updated] = await db
+        .update(schema.userPreferences)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.userPreferences.userId, userId))
+        .returning();
+      
+      return updated;
+    } else {
+      // Create new preferences if they don't exist
+      return this.createUserPreferences({
+        userId,
+        ...data,
+        favoritePrograms: data.favoritePrograms || [],
+        dashboardLayout: data.dashboardLayout || []
+      });
+    }
   }
 }
 
