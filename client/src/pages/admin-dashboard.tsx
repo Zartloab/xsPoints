@@ -142,7 +142,7 @@ export default function AdminDashboard() {
         const error = await response.json();
         throw new Error(error.message || "Failed to update exchange rate");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to update exchange rate",
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEditRate = (rate) => {
+  const handleEditRate = (rate: any) => {
     setRateToEdit(rate);
     setFromProgram(rate.fromProgram);
     setToProgram(rate.toProgram);
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   };
 
   // Format date for display
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
                             <div>
                               <h3 className="text-lg font-semibold">Wallets</h3>
                               <div className="space-y-2 mt-2">
-                                {userDetails.wallets.map((wallet) => (
+                                {userDetails.wallets.map((wallet: any) => (
                                   <div key={wallet.id} className="border p-2 rounded">
                                     <span className="font-medium">{wallet.program}:</span> {wallet.balance.toLocaleString()} points
                                     {wallet.accountNumber && (
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {userDetails.transactions.slice(0, 5).map((tx) => (
+                                {userDetails.transactions.slice(0, 5).map((tx: any) => (
                                   <TableRow key={tx.id}>
                                     <TableCell>{formatDate(tx.timestamp)}</TableCell>
                                     <TableCell>{tx.fromProgram}</TableCell>
