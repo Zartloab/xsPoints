@@ -39,11 +39,15 @@ export default function HomePage() {
   // Desktop layout
   return (
     <>
-      {/* New Personalized Dashboard */}
+      {/* Dashboard Header with personalized greeting and insights */}
       <PersonalizedDashboard />
       
-      <DashboardWallets />
+      {/* Wallet Cards Section */}
+      <section className="mb-8">
+        <DashboardWallets />
+      </section>
       
+      {/* Core Features Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="md:col-span-2">
           <MembershipTierCard />
@@ -53,6 +57,7 @@ export default function HomePage() {
         </div>
       </div>
       
+      {/* Points Conversion & Value Section */}
       <div id="convert" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="space-y-6">
           <ConversionForm />
@@ -68,8 +73,12 @@ export default function HomePage() {
         </div>
       </div>
       
-      <TransactionHistory />
+      {/* Recent Activity Section */}
+      <section className="mb-8">
+        <TransactionHistory />
+      </section>
       
+      {/* Account Management Section */}
       <section id="link" className="mb-12">
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Link Loyalty Programs</h2>
