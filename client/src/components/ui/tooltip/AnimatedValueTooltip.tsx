@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { Banknote, ShoppingBag, Plane, Coffee, Hotel, Car, Gift } from 'lucide-react';
 import { LoyaltyProgram } from '@shared/schema';
 import { 
@@ -135,6 +134,17 @@ const programIllustrations: Record<string, ProgramIllustration> = {
   }
 };
 
+// Function to get the program illustration or use a default if not found
+function getProgramIllustration(program: LoyaltyProgram | string): ProgramIllustration {
+  return programIllustrations[program] || {
+    icon: Banknote,
+    color: 'rgb(59, 130, 246)',
+    label: 'Points',
+    dollarValue: 0.01,
+    examples: [{ icon: ShoppingBag, label: 'Reward', value: 1000 }]
+  };
+}
+
 interface AnimatedValueTooltipProps {
   program: LoyaltyProgram | string;
   points: number;
@@ -146,16 +156,8 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
   points,
   children
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  // Get the program illustration or use a default if not found
-  const illustration = programIllustrations[program] || {
-    icon: Banknote,
-    color: 'rgb(59, 130, 246)',
-    label: 'Points',
-    dollarValue: 0.01,
-    examples: [{ icon: ShoppingBag, label: 'Reward', value: 1000 }]
-  };
+  // Get the program illustration
+  const illustration = getProgramIllustration(program as LoyaltyProgram);
   
   // Calculate the dollar value
   const dollarValue = (points * illustration.dollarValue).toLocaleString('en-US', {
@@ -171,112 +173,84 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
   
   return (
     <TooltipProvider>
-      <Tooltip
-        open={isOpen}
-        onOpenChange={setIsOpen}
-        delayDuration={300}
-      >
-        <TooltipTrigger asChild className="cursor-help">
-          <span onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help">
             {children}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="w-72 p-0 bg-white shadow-lg rounded-xl border-0">
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden rounded-xl"
-              >
-                {/* Header */}
-                <div
-                  className="p-4 text-white flex items-center"
-                  style={{ background: illustration.color }}
-                >
-                  <div className="bg-white/20 p-2 rounded-full mr-3">
-                    {React.createElement(illustration.icon, { size: 20 })}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm">{illustration.label}</h3>
-                    <p className="text-xs opacity-90">Estimated value</p>
+        <TooltipContent 
+          side="top" 
+          className="w-72 p-0 bg-white shadow-lg rounded-xl border-0"
+          sideOffset={5}
+        >
+          <div className="overflow-hidden rounded-xl">
+            {/* Header */}
+            <div
+              className="p-4 text-white flex items-center"
+              style={{ background: illustration.color }}
+            >
+              <div className="bg-white/20 p-2 rounded-full mr-3">
+                {React.createElement(illustration.icon, { size: 20 })}
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">{illustration.label}</h3>
+                <p className="text-xs opacity-90">Estimated value</p>
+              </div>
+            </div>
+            
+            {/* Value */}
+            <div className="p-4 bg-gray-50 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-gray-500 text-sm">Points</span>
+                  <div className="font-bold text-xl">{points.toLocaleString()}</div>
+                </div>
+                <div className="text-right">
+                  <span className="text-gray-500 text-sm">Value</span>
+                  <div className="font-bold text-xl text-green-600">
+                    {dollarValue}
                   </div>
                 </div>
-                
-                {/* Value */}
-                <div className="p-4 bg-gray-50 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-gray-500 text-sm">Points</span>
-                      <div className="font-bold text-xl">{points.toLocaleString()}</div>
+              </div>
+            </div>
+            
+            {/* Examples section */}
+            <div className="p-4">
+              <h4 className="text-sm text-gray-500 mb-2">What you could get:</h4>
+              
+              <div className="space-y-3">
+                {relevantExamples.map((example, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center"
+                  >
+                    <div 
+                      className="p-2 rounded-full mr-3 text-white" 
+                      style={{ background: illustration.color }}
+                    >
+                      {React.createElement(example.icon, { size: 16 })}
                     </div>
-                    <div className="text-right">
-                      <span className="text-gray-500 text-sm">Value</span>
-                      <motion.div 
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 0.3, type: "spring" }}
-                        className="font-bold text-xl"
-                      >
-                        {dollarValue}
-                      </motion.div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{example.label}</div>
+                      <div className="text-xs text-gray-500">
+                        ~{example.value.toLocaleString()} points
+                      </div>
                     </div>
+                    {points >= example.value ? (
+                      <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                        Enough!
+                      </div>
+                    ) : (
+                      <div className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                        {Math.floor((points / example.value) * 100)}% there
+                      </div>
+                    )}
                   </div>
-                </div>
-                
-                {/* Examples section */}
-                <div className="p-4">
-                  <h4 className="text-sm text-gray-500 mb-2">What you could get:</h4>
-                  
-                  <div className="space-y-3">
-                    {relevantExamples.map((example, index) => (
-                      <motion.div 
-                        key={index}
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex items-center"
-                      >
-                        <div 
-                          className="p-2 rounded-full mr-3 text-white" 
-                          style={{ background: illustration.color }}
-                        >
-                          {React.createElement(example.icon, { size: 16 })}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{example.label}</div>
-                          <div className="text-xs text-gray-500">
-                            ~{example.value.toLocaleString()} points
-                          </div>
-                        </div>
-                        {points >= example.value ? (
-                          <motion.div 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                            className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            Enough!
-                          </motion.div>
-                        ) : (
-                          <motion.div 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                            className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            {Math.floor((points / example.value) * 100)}% there
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                ))}
+              </div>
+            </div>
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
