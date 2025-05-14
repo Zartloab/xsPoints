@@ -222,7 +222,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
+                        {users.map((user: any) => (
                           <TableRow 
                             key={user.id} 
                             className={selectedUser === user.id ? "bg-muted" : ""}
@@ -365,7 +365,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {exchangeRates.map((rate) => (
+                    {exchangeRates.map((rate: any) => (
                       <TableRow key={rate.id}>
                         <TableCell>{rate.fromProgram}</TableCell>
                         <TableCell>{rate.toProgram}</TableCell>
