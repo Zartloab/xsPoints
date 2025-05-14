@@ -345,7 +345,6 @@ export type TradeTransaction = typeof tradeTransactions.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
-export type UserPreference = typeof userPreferences.$inferSelect;
-export type InsertUserPreference = z.infer<typeof insertUserPreferencesSchema>;
+// User preferences types removed
 export type ConvertPointsData = z.infer<typeof convertPointsSchema>;
 export type LinkAccountData = z.infer<typeof linkAccountSchema>;
