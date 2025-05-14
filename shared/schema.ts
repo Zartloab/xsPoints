@@ -54,14 +54,7 @@ export const loyaltyProgramEnum = pgEnum("loyalty_program", [
   "DELTA"
 ]);
 
-// User Preferences table for storing customization settings
-export const userPreferences = pgTable("user_preferences", {
-  id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => users.id),
-  dashboardLayout: text("dashboard_layout").array().default([]), // Array of program IDs in preferred order
-  favoritePrograms: loyaltyProgramEnum("favorite_programs").array().default([]), // User's favorite programs
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// User Preferences table removed
 
 // Business table - for merchants/businesses that want to issue their own points
 export const businesses = pgTable("businesses", {
@@ -344,12 +337,7 @@ export type BusinessPayment = typeof businessPayments.$inferSelect;
 export type BusinessPointIssuance = typeof businessPointIssuance.$inferSelect;
 export type BusinessAnalytics = typeof businessAnalytics.$inferSelect;
 // Define insert schema for UserPreferences
-export const insertUserPreferencesSchema = createInsertSchema(userPreferences)
-  .omit({ id: true })
-  .extend({
-    favoritePrograms: z.array(z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"])),
-    dashboardLayout: z.array(z.string())
-  });
+// UserPreferences schema removed
 
 export type TierBenefit = typeof tierBenefits.$inferSelect;
 export type TradeOffer = typeof tradeOffers.$inferSelect;

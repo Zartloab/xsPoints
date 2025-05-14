@@ -208,12 +208,10 @@ export class MemStorage implements IStorage {
     this.wallets = new Map();
     this.transactions = new Map();
     this.exchangeRates = new Map();
-    this.userPreferences = new Map();
     this.currentUserId = 1;
     this.currentWalletId = 1;
     this.currentTransactionId = 1;
     this.currentExchangeRateId = 1;
-    this.currentPreferenceId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
@@ -289,48 +287,7 @@ export class MemStorage implements IStorage {
     return user;
   }
   
-  // User Preferences Methods
-  async getUserPreferences(userId: number): Promise<UserPreference | undefined> {
-    return Array.from(this.userPreferences.values()).find(
-      (preference) => preference.userId === userId
-    );
-  }
-  
-  async createUserPreferences(data: InsertUserPreference): Promise<UserPreference> {
-    const id = this.currentPreferenceId++;
-    const preference: UserPreference = {
-      id,
-      userId: data.userId,
-      favoritePrograms: data.favoritePrograms || [],
-      dashboardLayout: data.dashboardLayout || [],
-      updatedAt: new Date()
-    };
-    
-    this.userPreferences.set(id, preference);
-    return preference;
-  }
-  
-  async updateUserPreferences(userId: number, data: Partial<InsertUserPreference>): Promise<UserPreference> {
-    const existingPrefs = await this.getUserPreferences(userId);
-    
-    if (existingPrefs) {
-      const updatedPrefs: UserPreference = {
-        ...existingPrefs,
-        favoritePrograms: data.favoritePrograms || existingPrefs.favoritePrograms,
-        dashboardLayout: data.dashboardLayout || existingPrefs.dashboardLayout,
-        updatedAt: new Date()
-      };
-      
-      this.userPreferences.set(existingPrefs.id, updatedPrefs);
-      return updatedPrefs;
-    } else {
-      return this.createUserPreferences({
-        userId,
-        favoritePrograms: data.favoritePrograms || [],
-        dashboardLayout: data.dashboardLayout || []
-      });
-    }
-  }
+  // User Preferences Methods removed
   
   // Rest of the methods implementation...
   // ...
