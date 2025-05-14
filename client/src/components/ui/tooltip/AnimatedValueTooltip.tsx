@@ -6,7 +6,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipPortal,
+} from "@radix-ui/react-tooltip";
 
 interface ProgramIllustration {
   icon: React.ElementType;
@@ -172,18 +173,20 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
     .slice(0, 2);
   
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="cursor-help">
             {children}
           </span>
         </TooltipTrigger>
-        <TooltipContent 
-          side="top" 
-          className="w-72 p-0 bg-white shadow-lg rounded-xl border-0"
-          sideOffset={5}
-        >
+        <TooltipPortal>
+          <TooltipContent 
+            side="top" 
+            className="w-72 p-0 bg-white shadow-lg rounded-xl border-0 z-[100]"
+            sideOffset={10}
+            collisionPadding={20}
+          >
           <div className="overflow-hidden rounded-xl">
             {/* Header */}
             <div
@@ -252,6 +255,7 @@ export const AnimatedValueTooltip: React.FC<AnimatedValueTooltipProps> = ({
             </div>
           </div>
         </TooltipContent>
+        </TooltipPortal>
       </Tooltip>
     </TooltipProvider>
   );
