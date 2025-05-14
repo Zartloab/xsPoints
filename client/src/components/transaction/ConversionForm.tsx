@@ -493,14 +493,18 @@ export default function ConversionForm() {
         <div className="flex justify-end">
           <Button 
             variant="outline" 
-            className="mr-3" 
+            className="mr-3 transition-all duration-200 transform hover:scale-105 hover:bg-gray-50" 
             onClick={handleReset}
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
             Reset
           </Button>
           <Button 
             disabled={amount <= 0 || fromProgram === toProgram || convertMutation.isPending || !sourceWallet || sourceWallet.balance < amount}
             onClick={handleConvert}
+            className="transition-all duration-200 transform hover:scale-105 hover:shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
           >
             {convertMutation.isPending ? (
               <>
@@ -508,7 +512,12 @@ export default function ConversionForm() {
                 Converting...
               </>
             ) : (
-              'Convert Points'
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                Convert Points
+              </>
             )}
           </Button>
         </div>
