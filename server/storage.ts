@@ -204,20 +204,23 @@ export class DatabaseStorage implements IStorage {
   
   async getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }> {
     try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId));
+      // Using raw SQL query to avoid potential Drizzle ORM issues
+      const result = await db.execute(
+        sql`SELECT points_converted, total_fees_paid, monthly_points_converted, membership_tier 
+            FROM users WHERE id = ${userId}`
+      );
       
-      if (!user) {
+      if (result.length === 0 || !result[0]) {
         throw new Error(`User with ID ${userId} not found`);
       }
       
+      const user = result[0];
+      
       return {
-        pointsConverted: user.pointsConverted || 0,
-        feesPaid: user.totalFeesPaid || 0,
-        monthlyPoints: user.monthlyPointsConverted || 0,
-        tier: user.membershipTier
+        pointsConverted: Number(user.points_converted) || 0,
+        feesPaid: Number(user.total_fees_paid) || 0,
+        monthlyPoints: Number(user.monthly_points_converted) || 0,
+        tier: user.membership_tier || "STANDARD"
       };
     } catch (error) {
       console.error(`Error fetching user stats for user ${userId}:`, error);
