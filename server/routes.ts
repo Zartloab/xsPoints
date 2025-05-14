@@ -20,9 +20,16 @@ import {
   businessIssuePointsSchema,
   createTradeOfferSchema,
   acceptTradeOfferSchema,
+  insertUserPreferencesSchema,
   type LoyaltyProgram 
 } from "@shared/schema";
 import { z } from 'zod';
+
+// Custom schema for user preferences update
+const updateUserPreferencesSchema = z.object({
+  favoritePrograms: z.array(z.enum(["QANTAS", "GYG", "XPOINTS", "VELOCITY", "AMEX", "FLYBUYS", "HILTON", "MARRIOTT", "AIRBNB", "DELTA"])).optional(),
+  dashboardLayout: z.array(z.string()).optional(),
+});
 
 // Define interfaces for tokenization and explorer features
 interface TokenLedgerEntry {
