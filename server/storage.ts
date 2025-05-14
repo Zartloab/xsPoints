@@ -85,23 +85,149 @@ export class DatabaseStorage implements IStorage {
     });
   }
   
-  // Exchange rates operations
-  async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
     try {
-      const [rate] = await db
+      const [user] = await db
         .select()
-        .from(exchangeRates)
-        .where(
-          and(
-            eq(exchangeRates.fromProgram, fromProgram),
-            eq(exchangeRates.toProgram, toProgram)
-          )
-        );
+        .from(users)
+        .where(eq(users.id, id));
       
-      return rate;
+      return user;
     } catch (error) {
-      console.error(`Error fetching exchange rate from ${fromProgram} to ${toProgram}:`, error);
+      console.error(`Error fetching user ${id}:`, error);
       throw error;
+    }
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username));
+      
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user by username ${username}:`, error);
+      throw error;
+    }
+  }
+  
+  async createUser(insertUser: InsertUser): Promise<User> {
+    try {
+      // Create the user with default values for required fields
+      const [user] = await db
+        .insert(users)
+        .values({
+          ...insertUser
+        })
+        .returning();
+      
+      // Create default wallets for the user
+      await Promise.all([
+        this.createWallet({
+          userId: user.id,
+          program: "XPOINTS",
+          balance: 1000, // Starting bonus
+          accountNumber: null,
+          accountName: null
+        }),
+        this.createWallet({
+          userId: user.id,
+          program: "QANTAS",
+          balance: 0,
+          accountNumber: null,
+          accountName: null
+        }),
+        this.createWallet({
+          userId: user.id,
+          program: "GYG",
+          balance: 0,
+          accountNumber: null,
+          accountName: null
+        })
+      ]);
+      
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+  
+  async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          membershipTier: tier,
+          tierExpiresAt: expiresAt || null
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating tier for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+      
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          pointsConverted: (user.pointsConverted || 0) + pointsConverted,
+          monthlyPointsConverted: (user.monthlyPointsConverted || 0) + pointsConverted,
+          totalFeesPaid: (user.totalFeesPaid || 0) + fee
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating stats for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  async getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+      
+      return {
+        pointsConverted: user.pointsConverted || 0,
+        feesPaid: user.totalFeesPaid || 0,
+        monthlyPoints: user.monthlyPointsConverted || 0,
+        tier: user.membershipTier
+      };
+    } catch (error) {
+      console.error(`Error fetching user stats for user ${userId}:`, error);
+      // Return default values as fallback
+      return {
+        pointsConverted: 0,
+        feesPaid: 0,
+        monthlyPoints: 0,
+        tier: "STANDARD"
+      };
     }
   }
   
@@ -143,10 +269,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [wallet] = await db
         .insert(wallets)
-        .values({
-          ...walletData,
-          createdAt: new Date()
-        })
+        .values(walletData)
         .returning();
       
       return wallet;
@@ -177,8 +300,7 @@ export class DatabaseStorage implements IStorage {
         .update(wallets)
         .set({ 
           accountNumber, 
-          accountName,
-          lastSynced: new Date()
+          accountName
         })
         .where(eq(wallets.id, id))
         .returning();
@@ -210,10 +332,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [transaction] = await db
         .insert(transactions)
-        .values({
-          ...transactionData,
-          timestamp: new Date()
-        })
+        .values(transactionData)
         .returning();
       
       return transaction;
@@ -223,73 +342,101 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // User operations
-  async getUserStats(userId: number): Promise<{ pointsConverted: number, feesPaid: number, monthlyPoints: number, tier: MembershipTier }> {
+  // Exchange rates operations
+  async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
     try {
-      const [user] = await db
-        .select({
-          pointsConverted: users.pointsConverted,
-          monthlyPoints: users.monthlyPoints,
-          feesPaid: users.feesPaid,
-          tier: users.membershipTier
-        })
-        .from(users)
-        .where(eq(users.id, userId));
-      
-      return {
-        pointsConverted: user?.pointsConverted || 0,
-        feesPaid: user?.feesPaid || 0,
-        monthlyPoints: user?.monthlyPoints || 0,
-        tier: user?.tier || "STANDARD"
-      };
-    } catch (error) {
-      console.error(`Error fetching user stats for user ${userId}:`, error);
-      throw error;
-    }
-  }
-  
-  async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
-    try {
-      const [updatedUser] = await db
-        .update(users)
-        .set({ 
-          membershipTier: tier,
-          tierExpiresAt: expiresAt || null
-        })
-        .where(eq(users.id, userId))
-        .returning();
-      
-      return updatedUser;
-    } catch (error) {
-      console.error(`Error updating tier for user ${userId}:`, error);
-      throw error;
-    }
-  }
-  
-  async updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User> {
-    try {
-      const [user] = await db
+      const [rate] = await db
         .select()
-        .from(users)
-        .where(eq(users.id, userId));
+        .from(exchangeRates)
+        .where(
+          and(
+            eq(exchangeRates.fromProgram, fromProgram),
+            eq(exchangeRates.toProgram, toProgram)
+          )
+        );
       
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`);
-      }
+      return rate;
+    } catch (error) {
+      console.error(`Error fetching exchange rate from ${fromProgram} to ${toProgram}:`, error);
+      throw error;
+    }
+  }
+  
+  // Tier benefits operations
+  async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
+    try {
+      const [benefits] = await db
+        .select()
+        .from(tierBenefits)
+        .where(eq(tierBenefits.tier, tier));
       
-      const [updatedUser] = await db
-        .update(users)
-        .set({ 
-          pointsConverted: (user.pointsConverted || 0) + pointsConverted,
-          monthlyPoints: (user.monthlyPoints || 0) + pointsConverted,
-          feesPaid: (user.feesPaid || 0) + fee
-        })
-        .where(eq(users.id, userId))
+      return benefits;
+    } catch (error) {
+      console.error(`Error fetching benefits for tier ${tier}:`, error);
+      throw error;
+    }
+  }
+  
+  async createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit> {
+    try {
+      const [newBenefits] = await db
+        .insert(tierBenefits)
+        .values(benefits)
         .returning();
       
-      return updatedUser;
+      return newBenefits;
     } catch (error) {
-      console.error(`Error updating stats for user ${userId}:`, error);
+      console.error("Error creating tier benefits:", error);
+      throw error;
+    }
+  }
+  
+  async initializeTierBenefits(): Promise<void> {
+    try {
+      const existingBenefits = await db.select().from(tierBenefits);
+      
+      if (existingBenefits.length === 0) {
+        await db.insert(tierBenefits).values([
+          {
+            tier: "STANDARD",
+            monthlyPointsThreshold: 0,
+            freeConversionLimit: 10000,
+            conversionFeeRate: "0.005",
+            p2pMinimumFee: "0.005",
+            p2pMaximumFee: "0.03",
+            monthlyExpiryDays: 30
+          },
+          {
+            tier: "SILVER",
+            monthlyPointsThreshold: 20000,
+            freeConversionLimit: 20000,
+            conversionFeeRate: "0.0045",
+            p2pMinimumFee: "0.004",
+            p2pMaximumFee: "0.025",
+            monthlyExpiryDays: 45
+          },
+          {
+            tier: "GOLD",
+            monthlyPointsThreshold: 50000,
+            freeConversionLimit: 50000,
+            conversionFeeRate: "0.0035",
+            p2pMinimumFee: "0.003",
+            p2pMaximumFee: "0.02",
+            monthlyExpiryDays: 60
+          },
+          {
+            tier: "PLATINUM",
+            monthlyPointsThreshold: 100000,
+            freeConversionLimit: 100000,
+            conversionFeeRate: "0.0025",
+            p2pMinimumFee: "0.002",
+            p2pMaximumFee: "0.015",
+            monthlyExpiryDays: 90
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error initializing tier benefits:", error);
       throw error;
     }
   }
@@ -297,16 +444,22 @@ export class DatabaseStorage implements IStorage {
   // Trading operations
   async getTradeOffers(excludeUserId?: number): Promise<TradeOffer[]> {
     try {
-      let query = db
-        .select()
-        .from(tradeOffers)
-        .where(eq(tradeOffers.status, "active"));
-      
       if (excludeUserId) {
-        query = query.where(ne(tradeOffers.createdBy, excludeUserId));
+        return await db
+          .select()
+          .from(tradeOffers)
+          .where(
+            and(
+              eq(tradeOffers.status, "open"),
+              ne(tradeOffers.createdBy, excludeUserId)
+            )
+          );
+      } else {
+        return await db
+          .select()
+          .from(tradeOffers)
+          .where(eq(tradeOffers.status, "open"));
       }
-      
-      return await query;
     } catch (error) {
       console.error("Error fetching trade offers:", error);
       throw error;
@@ -347,8 +500,7 @@ export class DatabaseStorage implements IStorage {
         .insert(tradeOffers)
         .values({
           ...data,
-          status: "active",
-          createdAt: new Date()
+          status: "open"
         })
         .returning();
       
@@ -397,84 +549,12 @@ export class DatabaseStorage implements IStorage {
     try {
       const [transaction] = await db
         .insert(tradeTransactions)
-        .values({
-          ...data,
-          completedAt: new Date()
-        })
+        .values(data)
         .returning();
       
       return transaction;
     } catch (error) {
       console.error("Error creating trade transaction:", error);
-      throw error;
-    }
-  }
-  
-  // Tier benefits operations
-  async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
-    try {
-      const [benefits] = await db
-        .select()
-        .from(tierBenefits)
-        .where(eq(tierBenefits.tier, tier));
-      
-      return benefits;
-    } catch (error) {
-      console.error(`Error fetching benefits for tier ${tier}:`, error);
-      throw error;
-    }
-  }
-  
-  async createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit> {
-    try {
-      const [newBenefits] = await db
-        .insert(tierBenefits)
-        .values(benefits)
-        .returning();
-      
-      return newBenefits;
-    } catch (error) {
-      console.error("Error creating tier benefits:", error);
-      throw error;
-    }
-  }
-  
-  async initializeTierBenefits(): Promise<void> {
-    try {
-      const existingBenefits = await db.select().from(tierBenefits);
-      
-      if (existingBenefits.length === 0) {
-        const defaultBenefits = [
-          {
-            tier: "STANDARD" as MembershipTier,
-            feeDiscount: 0,
-            maxFreePointsPerMonth: 10000,
-            loyaltyBonus: 0
-          },
-          {
-            tier: "SILVER" as MembershipTier,
-            feeDiscount: 10,
-            maxFreePointsPerMonth: 20000,
-            loyaltyBonus: 2
-          },
-          {
-            tier: "GOLD" as MembershipTier,
-            feeDiscount: 25,
-            maxFreePointsPerMonth: 50000,
-            loyaltyBonus: 5
-          },
-          {
-            tier: "PLATINUM" as MembershipTier,
-            feeDiscount: 50,
-            maxFreePointsPerMonth: 100000,
-            loyaltyBonus: 10
-          }
-        ];
-        
-        await db.insert(tierBenefits).values(defaultBenefits);
-      }
-    } catch (error) {
-      console.error("Error initializing tier benefits:", error);
       throw error;
     }
   }
@@ -510,100 +590,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-
-  
-  async getUser(id: number): Promise<User | undefined> {
+  async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
     try {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.id, id));
+        .where(eq(users.walletAddress, walletAddress));
       
       return user;
     } catch (error) {
-      console.error(`Error fetching user ${id}:`, error);
-      throw error;
-    }
-  }
-  
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username));
-      
-      return user;
-    } catch (error) {
-      console.error(`Error fetching user by username ${username}:`, error);
-      throw error;
-    }
-  }
-  
-  async createUser(insertUser: InsertUser): Promise<User> {
-    try {
-      // Create the user
-      const [user] = await db
-        .insert(users)
-        .values({
-          ...insertUser,
-          createdAt: new Date(),
-          membershipTier: "STANDARD",
-          kycVerified: "unverified",
-          pointsConverted: 0,
-          monthlyPoints: 0,
-          feesPaid: 0
-        })
-        .returning();
-      
-      // Create default wallets for the user
-      await Promise.all([
-        this.createWallet({
-          userId: user.id,
-          program: "XPOINTS",
-          balance: 1000, // Starting bonus
-          accountNumber: null,
-          accountName: null,
-          lastSynced: new Date()
-        }),
-        this.createWallet({
-          userId: user.id,
-          program: "QANTAS",
-          balance: 0,
-          accountNumber: null,
-          accountName: null,
-          lastSynced: new Date()
-        }),
-        this.createWallet({
-          userId: user.id,
-          program: "GYG",
-          balance: 0,
-          accountNumber: null,
-          accountName: null,
-          lastSynced: new Date()
-        })
-      ]);
-      
-      return user;
-    } catch (error) {
-      console.error("Error creating user:", error);
+      console.error(`Error finding user by wallet address ${walletAddress}:`, error);
       throw error;
     }
   }
   
   // Business analytics operations
   async getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined> {
-    // This is just a stub as we don't have a full implementation
+    // Simplified implementation
     return undefined;
   }
   
   async updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics> {
-    // This is just a stub as we don't have a full implementation
+    // Simplified implementation
     throw new Error("Not implemented");
   }
   
   async bulkIssuePoints(data: BulkPointIssuanceData): Promise<number> {
-    // This is just a stub as we don't have a full implementation
+    // Simplified implementation
     return 0;
   }
   
@@ -616,9 +629,7 @@ export class DatabaseStorage implements IStorage {
           tokenBalance: users.tokenBalance
         })
         .from(users)
-        .where(
-          ne(users.tokenBalance, null)
-        );
+        .where(sql`${users.tokenBalance} is not null`);
       
       return userBalances;
     } catch (error) {
@@ -645,93 +656,23 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
-  async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.walletAddress, walletAddress));
-      
-      return user;
-    } catch (error) {
-      console.error(`Error finding user by wallet address ${walletAddress}:`, error);
-      return undefined;
-    }
-  }
-  
-  async getUser(id: number): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id));
-      
-      return user;
-    } catch (error) {
-      console.error(`Error fetching user ${id}:`, error);
-      return undefined;
-    }
-  }
-  
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username));
-      
-      return user;
-    } catch (error) {
-      console.error(`Error fetching user by username ${username}:`, error);
-      return undefined;
-    }
-  }
-  
-  async createUser(insertUser: InsertUser): Promise<User> {
-    try {
-      const [user] = await db
-        .insert(users)
-        .values({
-          ...insertUser,
-          createdAt: new Date(),
-          kycVerified: "unverified",
-          membershipTier: "STANDARD",
-          tierExpiresAt: null,
-          pointsConverted: 0,
-          monthlyPointsConverted: 0,
-          lastMonthReset: null,
-          walletAddress: null,
-          walletPrivateKey: null,
-          tokenBalance: null,
-          tokenLedgerSynced: null,
-          feesPaid: 0
-        })
-        .returning();
-      
-      return user;
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
-    }
-  }
-  
-  // User Preferences Methods removed
-  
-  // Rest of the methods implementation...
-  // ...
 }
 
-// In-memory storage implementation - keeping for reference but not using
+// In-Memory Storage Implementation
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private wallets: Map<number, Wallet>;
   private transactions: Map<number, Transaction>;
   private exchangeRates: Map<string, ExchangeRate>;
+  private tierBenefits: Map<string, TierBenefit>;
+  private tradeOffers: Map<number, TradeOffer>;
+  private tradeTransactions: Map<number, TradeTransaction>;
   currentUserId: number;
   currentWalletId: number;
   currentTransactionId: number;
   currentExchangeRateId: number;
+  currentTradeOfferId: number;
+  currentTradeTransactionId: number;
   sessionStore: SessionStore;
   
   constructor() {
@@ -739,21 +680,90 @@ export class MemStorage implements IStorage {
     this.wallets = new Map();
     this.transactions = new Map();
     this.exchangeRates = new Map();
+    this.tierBenefits = new Map();
+    this.tradeOffers = new Map();
+    this.tradeTransactions = new Map();
     this.currentUserId = 1;
     this.currentWalletId = 1;
     this.currentTransactionId = 1;
     this.currentExchangeRateId = 1;
+    this.currentTradeOfferId = 1;
+    this.currentTradeTransactionId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+    
+    // Initialize tier benefits
+    this.initializeTierBenefits();
   }
   
-  // Blockchain wallet management methods
+  // Add implementation for all required methods...
+  // Keeping the implementation simple as we're focused on database storage
+  
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.username === username);
+  }
+  
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const userId = this.currentUserId++;
+    const now = new Date();
+    
+    const user = { 
+      id: userId, 
+      ...insertUser,
+      createdAt: now,
+      membershipTier: "STANDARD" as MembershipTier,
+      kycVerified: "unverified",
+      pointsConverted: 0,
+      monthlyPointsConverted: 0,
+      totalFeesPaid: 0,
+      tokenBalance: 0,
+      tokenLedgerSynced: null,
+      tierExpiresAt: null,
+      walletAddress: null,
+      walletPrivateKey: null,
+      lastMonthReset: null,
+    };
+    
+    this.users.set(userId, user);
+    
+    // Create default wallets
+    await this.createWallet({
+      userId: user.id,
+      program: "XPOINTS",
+      balance: 1000,
+      accountNumber: null,
+      accountName: null
+    });
+    
+    await this.createWallet({
+      userId: user.id,
+      program: "QANTAS",
+      balance: 0,
+      accountNumber: null,
+      accountName: null
+    });
+    
+    await this.createWallet({
+      userId: user.id,
+      program: "GYG",
+      balance: 0,
+      accountNumber: null,
+      accountName: null
+    });
+    
+    return user;
+  }
+  
+  // Implement other methods as needed...
+  
   async updateUserWallet(userId: number, walletAddress: string, walletPrivateKey: string): Promise<User> {
-    const user = this.users.get(userId);
-    if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
-    }
+    const user = await this.getUser(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
     
     const updatedUser = {
       ...user,
@@ -767,10 +777,8 @@ export class MemStorage implements IStorage {
   }
   
   async updateTokenBalance(userId: number, balance: number): Promise<User> {
-    const user = this.users.get(userId);
-    if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
-    }
+    const user = await this.getUser(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
     
     const updatedUser = {
       ...user,
@@ -786,43 +794,262 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(user => user.walletAddress === walletAddress);
   }
   
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  async updateUserTier(userId: number, tier: MembershipTier, expiresAt?: Date): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
+    
+    const updatedUser = {
+      ...user,
+      membershipTier: tier,
+      tierExpiresAt: expiresAt || null
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
   
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+  async updateUserStats(userId: number, pointsConverted: number, fee: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
+    
+    const updatedUser = {
+      ...user,
+      pointsConverted: (user.pointsConverted || 0) + pointsConverted,
+      monthlyPointsConverted: (user.monthlyPointsConverted || 0) + pointsConverted,
+      totalFeesPaid: (user.totalFeesPaid || 0) + fee
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async getUserStats(userId: number): Promise<{ pointsConverted: number; feesPaid: number; monthlyPoints: number; tier: MembershipTier; }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
+    
+    return {
+      pointsConverted: user.pointsConverted || 0,
+      feesPaid: user.totalFeesPaid || 0,
+      monthlyPoints: user.monthlyPointsConverted || 0,
+      tier: user.membershipTier
+    };
+  }
+  
+  // Implementing other interface methods would follow a similar pattern
+  
+  // Implement storage methods
+  async getUserWallets(userId: number): Promise<Wallet[]> {
+    return Array.from(this.wallets.values()).filter(wallet => wallet.userId === userId);
+  }
+  
+  async getWallet(userId: number, program: LoyaltyProgram): Promise<Wallet | undefined> {
+    return Array.from(this.wallets.values()).find(wallet => 
+      wallet.userId === userId && wallet.program === program
     );
   }
   
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      createdAt: new Date(),
-      kycVerified: "unverified",
-      membershipTier: "STANDARD",
-      tierExpiresAt: null,
-      pointsConverted: 0,
-      monthlyPointsConverted: 0,
-      lastMonthReset: null,
-      walletAddress: null,
-      walletPrivateKey: null,
-      tokenBalance: null,
-      tokenLedgerSynced: null,
-      feesPaid: 0
+  async createWallet(walletData: Omit<Wallet, "id" | "createdAt">): Promise<Wallet> {
+    const id = this.currentWalletId++;
+    const wallet: Wallet = {
+      id,
+      ...walletData,
+      createdAt: new Date()
     };
-    this.users.set(id, user);
-    return user;
+    
+    this.wallets.set(id, wallet);
+    return wallet;
   }
   
-  // User Preferences Methods removed
+  async updateWalletBalance(id: number, balance: number): Promise<Wallet> {
+    const wallet = this.wallets.get(id);
+    if (!wallet) throw new Error(`Wallet with ID ${id} not found`);
+    
+    const updatedWallet = { ...wallet, balance };
+    this.wallets.set(id, updatedWallet);
+    return updatedWallet;
+  }
   
-  // Rest of the methods implementation...
-  // ...
+  async updateWalletAccount(id: number, accountNumber: string | null, accountName: string | null): Promise<Wallet> {
+    const wallet = this.wallets.get(id);
+    if (!wallet) throw new Error(`Wallet with ID ${id} not found`);
+    
+    const updatedWallet = { 
+      ...wallet,
+      accountNumber,
+      accountName
+    };
+    
+    this.wallets.set(id, updatedWallet);
+    return updatedWallet;
+  }
+  
+  async getUserTransactions(userId: number): Promise<Transaction[]> {
+    return Array.from(this.transactions.values())
+      .filter(tx => tx.userId === userId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+  
+  async createTransaction(transactionData: Omit<Transaction, "id" | "timestamp">): Promise<Transaction> {
+    const id = this.currentTransactionId++;
+    const transaction: Transaction = {
+      id,
+      ...transactionData,
+      timestamp: new Date()
+    };
+    
+    this.transactions.set(id, transaction);
+    return transaction;
+  }
+  
+  async getExchangeRate(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<ExchangeRate | undefined> {
+    const key = `${fromProgram}-${toProgram}`;
+    return this.exchangeRates.get(key);
+  }
+  
+  async getTierBenefits(tier: MembershipTier): Promise<TierBenefit | undefined> {
+    return this.tierBenefits.get(tier);
+  }
+  
+  async createTierBenefits(benefits: InsertTierBenefits): Promise<TierBenefit> {
+    const id = this.tierBenefits.size + 1;
+    const tierBenefit: TierBenefit = {
+      id,
+      ...benefits
+    };
+    
+    this.tierBenefits.set(benefits.tier, tierBenefit);
+    return tierBenefit;
+  }
+  
+  async initializeTierBenefits(): Promise<void> {
+    if (this.tierBenefits.size === 0) {
+      await this.createTierBenefits({
+        tier: "STANDARD",
+        monthlyPointsThreshold: 0,
+        freeConversionLimit: 10000,
+        conversionFeeRate: "0.005",
+        p2pMinimumFee: "0.005",
+        p2pMaximumFee: "0.03",
+        monthlyExpiryDays: 30
+      });
+      
+      await this.createTierBenefits({
+        tier: "SILVER",
+        monthlyPointsThreshold: 20000,
+        freeConversionLimit: 20000,
+        conversionFeeRate: "0.0045",
+        p2pMinimumFee: "0.004",
+        p2pMaximumFee: "0.025",
+        monthlyExpiryDays: 45
+      });
+      
+      await this.createTierBenefits({
+        tier: "GOLD",
+        monthlyPointsThreshold: 50000,
+        freeConversionLimit: 50000,
+        conversionFeeRate: "0.0035",
+        p2pMinimumFee: "0.003",
+        p2pMaximumFee: "0.02",
+        monthlyExpiryDays: 60
+      });
+      
+      await this.createTierBenefits({
+        tier: "PLATINUM",
+        monthlyPointsThreshold: 100000,
+        freeConversionLimit: 100000,
+        conversionFeeRate: "0.0025",
+        p2pMinimumFee: "0.002",
+        p2pMaximumFee: "0.015",
+        monthlyExpiryDays: 90
+      });
+    }
+  }
+  
+  // Simplified stubs for trading
+  async getTradeOffers(excludeUserId?: number): Promise<TradeOffer[]> {
+    let offers = Array.from(this.tradeOffers.values()).filter(o => o.status === "open");
+    
+    if (excludeUserId) {
+      offers = offers.filter(o => o.createdBy !== excludeUserId);
+    }
+    
+    return offers;
+  }
+  
+  async getUserTradeOffers(userId: number): Promise<TradeOffer[]> {
+    return Array.from(this.tradeOffers.values()).filter(o => o.createdBy === userId);
+  }
+  
+  async getTradeOffer(id: number): Promise<TradeOffer | undefined> {
+    return this.tradeOffers.get(id);
+  }
+  
+  async createTradeOffer(data: Omit<TradeOffer, "id" | "createdAt" | "status">): Promise<TradeOffer> {
+    const id = this.currentTradeOfferId++;
+    const offer: TradeOffer = {
+      id,
+      ...data,
+      status: "open",
+      createdAt: new Date()
+    };
+    
+    this.tradeOffers.set(id, offer);
+    return offer;
+  }
+  
+  async updateTradeOfferStatus(id: number, status: string): Promise<TradeOffer | undefined> {
+    const offer = this.tradeOffers.get(id);
+    if (!offer) return undefined;
+    
+    const updatedOffer = { ...offer, status };
+    this.tradeOffers.set(id, updatedOffer);
+    return updatedOffer;
+  }
+  
+  async getTradeHistory(userId: number): Promise<TradeTransaction[]> {
+    return Array.from(this.tradeTransactions.values()).filter(
+      t => t.buyerId === userId || t.sellerId === userId
+    );
+  }
+  
+  async createTradeTransaction(data: Omit<TradeTransaction, "id" | "completedAt">): Promise<TradeTransaction> {
+    const id = this.currentTradeTransactionId++;
+    const transaction: TradeTransaction = {
+      id,
+      ...data,
+      completedAt: new Date()
+    };
+    
+    this.tradeTransactions.set(id, transaction);
+    return transaction;
+  }
+  
+  // Simple stubs for business analytics
+  async getBusinessAnalytics(businessId: number): Promise<BusinessAnalytics | undefined> {
+    return undefined; 
+  }
+  
+  async updateBusinessAnalytics(businessId: number, data: Partial<InsertBusinessAnalytics>): Promise<BusinessAnalytics> {
+    throw new Error("Not implemented");
+  }
+  
+  async bulkIssuePoints(data: BulkPointIssuanceData): Promise<number> {
+    return 0;
+  }
+  
+  // Simple stubs for blockchain operations
+  async getAllUserTokenBalances(): Promise<{ id: number; tokenBalance: number | null; }[]> {
+    return Array.from(this.users.values())
+      .filter(u => u.tokenBalance !== null && u.tokenBalance !== undefined)
+      .map(u => ({ id: u.id, tokenBalance: u.tokenBalance }));
+  }
+  
+  async getAllConversionTransactions(fromProgram: LoyaltyProgram, toProgram: LoyaltyProgram): Promise<Transaction[]> {
+    return Array.from(this.transactions.values()).filter(
+      t => t.fromProgram === fromProgram && t.toProgram === toProgram
+    );
+  }
 }
 
-// Switch to database storage
+// Use the PostgreSQL implementation
 export const storage = new DatabaseStorage();
