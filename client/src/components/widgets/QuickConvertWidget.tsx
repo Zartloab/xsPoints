@@ -4,6 +4,7 @@ import { apiRequest, getQueryFn, queryClient } from '@/lib/queryClient';
 import { Wallet, ConvertPointsData, ExchangeRate } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { AnimatedValueTooltip } from '@/components/ui/tooltip/AnimatedValueTooltip';
 import { 
   Select, 
   SelectContent, 

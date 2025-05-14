@@ -4,6 +4,7 @@ import ProgramIcon from './ProgramIcon';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { getQueryFn } from '@/lib/queryClient';
+import { AnimatedValueTooltip } from '@/components/ui/tooltip/AnimatedValueTooltip';
 
 interface LoyaltyCardProps {
   wallet: Wallet;
@@ -189,9 +190,14 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
         
         <div className="mb-5">
           <div className="flex items-baseline">
-            <span className="text-2xl font-bold text-gray-800">
-              {wallet.balance.toLocaleString()}
-            </span>
+            <AnimatedValueTooltip
+              program={wallet.program}
+              points={wallet.balance}
+            >
+              <span className="text-2xl font-bold text-gray-800 cursor-help hover:text-opacity-80 transition-all">
+                {wallet.balance.toLocaleString()}
+              </span>
+            </AnimatedValueTooltip>
             <span className="ml-1 text-gray-500 text-sm">
               {isXpoints ? 'xPoints' : 'points'}
             </span>
@@ -199,7 +205,14 @@ export default function LoyaltyCard({ wallet, onConvert }: LoyaltyCardProps) {
           {!isXpoints && exchangeRate && (
             <div className="text-xs text-gray-500 mt-1 flex items-center">
               <div className="bg-blue-50 text-blue-600 rounded-full px-1.5 py-0.5 text-xs font-medium mr-1">≈</div>
-              {Math.round(wallet.balance * Number(exchangeRate.rate)).toLocaleString()} xPoints
+              <AnimatedValueTooltip
+                program="XPOINTS"
+                points={Math.round(wallet.balance * Number(exchangeRate.rate))}
+              >
+                <span className="cursor-help hover:text-blue-600 transition-all">
+                  {Math.round(wallet.balance * Number(exchangeRate.rate)).toLocaleString()} xPoints
+                </span>
+              </AnimatedValueTooltip>
             </div>
           )}
           {isXpoints && (
