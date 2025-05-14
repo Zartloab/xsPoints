@@ -3,7 +3,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
 import MembershipTierCard from '@/components/dashboard/MembershipTierCard';
-import PersonalizedDashboard from '@/components/dashboard/PersonalizedDashboard';
 import ConversionForm from '@/components/transaction/ConversionForm';
 import ConversionWizard from '@/components/transaction/ConversionWizard';
 import TransactionHistory from '@/components/transaction/TransactionHistory';
@@ -39,9 +38,6 @@ export default function HomePage() {
   // Desktop layout
   return (
     <>
-      {/* Dashboard Header with personalized greeting and insights */}
-      <PersonalizedDashboard />
-      
       {/* Wallet Cards Section */}
       <section className="mb-8">
         <DashboardWallets />
