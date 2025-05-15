@@ -26,6 +26,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { AnimatedValueTooltip } from '@/components/ui/tooltip/AnimatedValueTooltip';
+import { Sparkline } from '@/components/ui/charts/Sparkline';
 import {
   HelpCircle,
   RefreshCw,
@@ -38,7 +39,8 @@ import {
   ArrowRightLeft,
   CreditCard,
   History,
-  ChevronRight
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 
 interface StepProps {
@@ -154,6 +156,17 @@ const IntuitiveConversionWizard: React.FC = () => {
     queryFn: async () => {
       const res = await apiRequest('GET', `/api/exchange-rates?from=${fromProgram}&to=${toProgram}`);
       if (!res.ok) throw new Error('Failed to fetch exchange rate');
+      return res.json();
+    },
+    enabled: !!fromProgram && !!toProgram && fromProgram !== toProgram && open && step >= 1,
+  });
+  
+  // Get historical rate data for sparkline
+  const { data: rateHistory, isLoading: isHistoryLoading } = useQuery({
+    queryKey: ['/api/exchange-rates/history', { from: fromProgram, to: toProgram }],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/exchange-rates/history?from=${fromProgram}&to=${toProgram}&days=30`);
+      if (!res.ok) throw new Error('Failed to fetch rate history');
       return res.json();
     },
     enabled: !!fromProgram && !!toProgram && fromProgram !== toProgram && open && step >= 1,
@@ -422,7 +435,39 @@ const IntuitiveConversionWizard: React.FC = () => {
                         Exchange rates are updated daily based on market values.
                         Rates reflect the relative value of different loyalty program points.
                       </p>
-                      <div className="text-xs bg-primary/10 p-2 rounded-sm mt-2">
+                      
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs flex items-center text-muted-foreground">
+                            <TrendingUp className="h-3 w-3 mr-1" /> 
+                            Rate Trend (30 days)
+                          </span>
+                          {!isHistoryLoading && rateHistory && rateHistory.length > 0 && (
+                            <div className="flex items-center text-xs">
+                              <span className={
+                                rateHistory[0].rate <= rateHistory[rateHistory.length-1].rate 
+                                  ? "text-green-600" 
+                                  : "text-red-600"
+                              }>
+                                {Math.abs(((rateHistory[rateHistory.length-1].rate / rateHistory[0].rate) - 1) * 100).toFixed(2)}%
+                                {rateHistory[0].rate <= rateHistory[rateHistory.length-1].rate ? " ↑" : " ↓"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {isHistoryLoading ? (
+                          <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+                        ) : (
+                          <Sparkline 
+                            data={rateHistory || []} 
+                            height={30} 
+                            showTooltip={true}
+                            className="rounded-md"
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="text-xs bg-primary/10 p-2 rounded-sm mt-3">
                         Last updated: {new Date().toLocaleDateString()}
                       </div>
                     </div>
@@ -590,6 +635,36 @@ const IntuitiveConversionWizard: React.FC = () => {
             <li className="flex justify-between">
               <span className="text-muted-foreground">Exchange rate:</span>
               <span>1 {fromProgram} = {exchangeRate?.rate || '?'} {toProgram}</span>
+            </li>
+            <li className="pt-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-muted-foreground text-sm flex items-center">
+                  <TrendingUp className="h-3 w-3 mr-1" /> 
+                  Rate Trend (30 days)
+                </span>
+                {!isHistoryLoading && rateHistory && rateHistory.length > 0 && (
+                  <div className="flex items-center text-xs">
+                    <span className={
+                      rateHistory[0].rate <= rateHistory[rateHistory.length-1].rate 
+                        ? "text-green-600" 
+                        : "text-red-600"
+                    }>
+                      {Math.abs(((rateHistory[rateHistory.length-1].rate / rateHistory[0].rate) - 1) * 100).toFixed(2)}%
+                      {rateHistory[0].rate <= rateHistory[rateHistory.length-1].rate ? " ↑" : " ↓"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {isHistoryLoading ? (
+                <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+              ) : (
+                <Sparkline 
+                  data={rateHistory || []} 
+                  height={40} 
+                  showTooltip={true}
+                  className="rounded-md border border-gray-100"
+                />
+              )}
             </li>
             <li className="flex justify-between">
               <span className="text-muted-foreground">Conversion fee:</span>
