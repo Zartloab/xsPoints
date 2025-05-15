@@ -45,7 +45,8 @@ export default function HomePage() {
       <Banner
         title={`Welcome back, ${user?.username || 'User'}!`}
         subtitle="Manage your loyalty points, perform conversions, and discover the best value for your points"
-        gradientColors={['from-blue-700', 'to-blue-500']}
+        backgroundImage="/images/backgrounds/home.png"
+        overlayOpacity={0.5}
         pattern="grid"
         height="md"
         actionButton={

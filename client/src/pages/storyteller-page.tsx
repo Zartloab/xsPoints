@@ -119,7 +119,8 @@ export default function StorytellerPage() {
       <Banner
         title="Contextual Point Value Storyteller"
         subtitle="Discover what your loyalty points are actually worth in real-world terms"
-        gradientColors={['from-emerald-600', 'to-teal-500']}
+        backgroundImage="/images/backgrounds/storyteller.png"
+        overlayOpacity={0.6}
         pattern="waves"
         height="md"
       >

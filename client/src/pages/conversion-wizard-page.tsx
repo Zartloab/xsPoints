@@ -20,7 +20,8 @@ export default function ConversionWizardPage() {
       <Banner
         title="Intuitive Point Conversion"
         subtitle="Convert your loyalty points between programs with our step-by-step wizard"
-        gradientColors={['from-blue-600', 'to-indigo-500']}
+        backgroundImage="/images/backgrounds/conversion.png"
+        overlayOpacity={0.7}
         pattern="dots"
         height="md"
         actionButton={
