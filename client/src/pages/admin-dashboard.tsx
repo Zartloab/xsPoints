@@ -234,44 +234,9 @@ export default function AdminDashboard() {
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>View and manage all users in the system</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={async () => {
-                  try {
-                    setIsLoading(true);
-                    const usersResponse = await apiRequest("GET", "/api/admin/users");
-                    const usersData = await usersResponse.json();
-                    setUsers(usersData);
-                    
-                    // Clear user details if the selected user no longer exists
-                    if (selectedUser && !usersData.find((u: any) => u.id === selectedUser)) {
-                      setSelectedUser(null);
-                      setUserDetails(null);
-                    }
-                    
-                    toast({
-                      title: "Success",
-                      description: "User list refreshed",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to refresh user list",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>View and manage all users in the system</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -471,38 +436,10 @@ export default function AdminDashboard() {
                 <CardTitle>Exchange Rates Management</CardTitle>
                 <CardDescription>Update rates between loyalty programs</CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={async () => {
-                    try {
-                      setIsLoading(true);
-                      const response = await apiRequest("GET", "/api/admin/exchange-rates");
-                      const data = await response.json();
-                      setExchangeRates(data);
-                      toast({
-                        title: "Success",
-                        description: "Exchange rates refreshed",
-                      });
-                    } catch (error) {
-                      toast({
-                        title: "Error",
-                        description: "Failed to refresh exchange rates",
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Refresh
-                </Button>
-                <Button onClick={handleCreateNewRate}>
-                  <DollarSign className="h-4 w-4 mr-1" />
-                  Add New Rate
-                </Button>
-              </div>
+              <Button onClick={handleCreateNewRate}>
+                <DollarSign className="h-4 w-4 mr-1" />
+                Add New Rate
+              </Button>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -545,43 +482,9 @@ export default function AdminDashboard() {
         {/* Statistics Tab */}
         <TabsContent value="statistics">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>System Statistics</CardTitle>
-                <CardDescription>Overview of platform usage and metrics</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={async () => {
-                  try {
-                    setIsLoading(true);
-                    // Fetch fresh data for statistics
-                    const usersResponse = await apiRequest("GET", "/api/admin/users");
-                    const usersData = await usersResponse.json();
-                    setUsers(usersData);
-                    
-                    const ratesResponse = await apiRequest("GET", "/api/admin/exchange-rates");
-                    const ratesData = await ratesResponse.json();
-                    setExchangeRates(ratesData);
-                    
-                    toast({
-                      title: "Success",
-                      description: "Statistics refreshed",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to refresh statistics",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
+            <CardHeader>
+              <CardTitle>System Statistics</CardTitle>
+              <CardDescription>Overview of platform usage and metrics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
