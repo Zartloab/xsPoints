@@ -41,18 +41,82 @@ import {
 } from "lucide-react";
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { MembershipTier, LoyaltyProgram } from '@shared/schema';
+
+// Interfaces for Admin Dashboard
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  kycVerified: 'unverified' | 'pending' | 'verified';
+  membershipTier: MembershipTier;
+  tierExpiresAt: string | null;
+  pointsConverted: number;
+  monthlyPointsConverted: number;
+  lastMonthReset: string | null;
+  totalFeesPaid: number;
+  walletAddress: string | null;
+  tokenBalance: number | null;
+}
+
+interface AdminUserDetails extends AdminUser {
+  wallets: AdminWallet[];
+  transactions: AdminTransaction[];
+}
+
+interface AdminWallet {
+  id: number;
+  userId: number;
+  program: LoyaltyProgram;
+  balance: number;
+  accountNumber: string | null;
+  accountName: string | null;
+  createdAt: string;
+}
+
+interface AdminTransaction {
+  id: number;
+  userId: number;
+  fromProgram: LoyaltyProgram;
+  toProgram: LoyaltyProgram;
+  amountFrom: number;
+  amountTo: number;
+  timestamp: string;
+  feeApplied: number;
+  status: string;
+  recipientId: number;
+  transactionHash: string | null;
+}
+
+interface ExchangeRate {
+  id: number;
+  fromProgram: LoyaltyProgram;
+  toProgram: LoyaltyProgram;
+  rate: string;
+  updatedAt: string;
+  verificationData: string | null;
+}
+
+interface NewExchangeRate {
+  fromProgram: LoyaltyProgram;
+  toProgram: LoyaltyProgram;
+  rate: string;
+}
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
-  const [users, setUsers] = useState<any[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
-  const [userDetails, setUserDetails] = useState<any | null>(null);
+  const [userDetails, setUserDetails] = useState<AdminUserDetails | null>(null);
   const [isEditingRate, setIsEditingRate] = useState(false);
-  const [rateToEdit, setRateToEdit] = useState<any | null>(null);
+  const [rateToEdit, setRateToEdit] = useState<ExchangeRate | null>(null);
   
   // For rate editing form
   const [fromProgram, setFromProgram] = useState("");
