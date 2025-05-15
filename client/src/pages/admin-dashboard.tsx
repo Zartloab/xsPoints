@@ -118,6 +118,39 @@ export default function AdminDashboard() {
     }
   };
 
+  // Update user tier or KYC status
+  const updateUser = async (userId: number, tierOrKyc: { membershipTier?: string, kycVerified?: string }) => {
+    try {
+      const response = await apiRequest("PUT", `/api/admin/users/${userId}`, tierOrKyc);
+      
+      if (response.ok) {
+        // Refresh user list
+        const usersResponse = await apiRequest("GET", "/api/admin/users");
+        const usersData = await usersResponse.json();
+        setUsers(usersData);
+        
+        // Refresh user details if viewing that user
+        if (selectedUser === userId) {
+          await fetchUserDetails(userId);
+        }
+        
+        toast({
+          title: "Success",
+          description: "User updated successfully",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update user");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Update exchange rate
   const handleUpdateRate = async () => {
     try {
@@ -262,11 +295,71 @@ export default function AdminDashboard() {
                                 <div>
                                   <span className="font-medium">Email:</span> {userDetails.user.email}
                                 </div>
-                                <div>
+                                <div className="flex justify-between items-center">
                                   <span className="font-medium">Membership Tier:</span> {userDetails.user.membershipTier}
+                                  <div className="space-x-1">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { membershipTier: "STANDARD" })}
+                                      disabled={userDetails.user.membershipTier === "STANDARD"}
+                                    >
+                                      Standard
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { membershipTier: "SILVER" })}
+                                      disabled={userDetails.user.membershipTier === "SILVER"}
+                                    >
+                                      Silver
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { membershipTier: "GOLD" })}
+                                      disabled={userDetails.user.membershipTier === "GOLD"}
+                                    >
+                                      Gold
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { membershipTier: "PLATINUM" })}
+                                      disabled={userDetails.user.membershipTier === "PLATINUM"}
+                                    >
+                                      Platinum
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div>
+                                <div className="flex justify-between items-center">
                                   <span className="font-medium">KYC Status:</span> {userDetails.user.kycVerified}
+                                  <div className="space-x-1">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { kycVerified: "unverified" })}
+                                      disabled={userDetails.user.kycVerified === "unverified"}
+                                    >
+                                      Unverified
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { kycVerified: "pending" })}
+                                      disabled={userDetails.user.kycVerified === "pending"}
+                                    >
+                                      Pending
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => updateUser(userDetails.user.id, { kycVerified: "verified" })}
+                                      disabled={userDetails.user.kycVerified === "verified"}
+                                    >
+                                      Verified
+                                    </Button>
+                                  </div>
                                 </div>
                                 <div>
                                   <span className="font-medium">Created:</span> {formatDate(userDetails.user.createdAt)}
