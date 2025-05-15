@@ -246,7 +246,8 @@ export default function TradingPage() {
       <Banner
         title="P2P Trading Marketplace"
         subtitle="Exchange your loyalty points directly with other users at your preferred rates"
-        gradientColors={['from-purple-700', 'to-indigo-500']}
+        backgroundImage="/images/backgrounds/trading.png"
+        overlayOpacity={0.6}
         pattern="dots"
         height="md"
         align="center"

@@ -5,6 +5,8 @@ interface BannerProps {
   title: string;
   subtitle?: string;
   gradientColors?: string[];
+  backgroundImage?: string;
+  overlayOpacity?: number;
   pattern?: 'dots' | 'grid' | 'waves' | 'none';
   align?: 'left' | 'center' | 'right';
   textColor?: string;
@@ -18,6 +20,8 @@ const Banner: React.FC<BannerProps> = ({
   title,
   subtitle,
   gradientColors = ['from-blue-600', 'to-blue-400'],
+  backgroundImage,
+  overlayOpacity = 0.4,
   pattern = 'dots',
   align = 'left',
   textColor = 'text-white',
@@ -54,17 +58,38 @@ const Banner: React.FC<BannerProps> = ({
     none: {},
   };
   
+  // Prepare styles based on whether we have a background image or gradient
+  const backgroundStyles = backgroundImage
+    ? { backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { };
+
   return (
     <div 
       className={cn(
         'relative overflow-hidden rounded-xl mb-6',
-        `bg-gradient-to-r ${gradientColors.join(' ')}`,
+        !backgroundImage && `bg-gradient-to-r ${gradientColors.join(' ')}`,
         heightClasses[height],
         className
       )}
-      style={patternStyles[pattern]}
+      style={{
+        ...backgroundStyles,
+        ...(pattern !== 'none' ? patternStyles[pattern] : {})
+      }}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
+      {/* Gradient or image overlay */}
+      <div 
+        className={cn(
+          "absolute inset-0",
+          !backgroundImage && "bg-gradient-to-r from-black/10 to-transparent",
+          backgroundImage && "bg-black"
+        )}
+        style={{ opacity: backgroundImage ? overlayOpacity : undefined }}
+      ></div>
+      
+      {/* Add gradient overlay on top of the image/pattern for better text readability */}
+      {backgroundImage && (
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      )}
       
       <div className={cn(
         'relative z-10 container mx-auto px-4 flex flex-col h-full',
