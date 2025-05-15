@@ -433,7 +433,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all loyalty program information with verification details
+  // Generate historical rate data for sparklines
+function generateHistoricalRateData(days: number, fromProgram: string, toProgram: string, currentRate: number) {
+  const history = [];
+  const now = new Date();
+  let rate = currentRate;
+  const volatility = 0.005; // 0.5% daily volatility
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    
+    // Add some random fluctuation to simulate real market movement
+    const randomFactor = 1 + (Math.random() * 2 - 1) * volatility;
+    const dailyRate = rate * randomFactor;
+    
+    // Add occasional small trend shifts to make the data look more realistic
+    if (i % 10 === 0) {
+      rate = rate * (1 + (Math.random() * 0.04 - 0.02));
+    }
+    
+    history.push({
+      date: date.toISOString().split('T')[0],
+      rate: Number(dailyRate.toFixed(6)),
+    });
+  }
+  
+  return history;
+}
+
+// Get historical exchange rate data for sparklines
+app.get("/api/exchange-rates/history", async (req, res) => {
+  if (!req.isAuthenticated()) return res.sendStatus(401);
+  
+  const { from, to, days = 30 } = req.query;
+  
+  try {
+    if (!from || !to) {
+      return res.status(400).json({ message: "Both 'from' and 'to' parameters are required" });
+    }
+    
+    // Get current exchange rate to use as baseline
+    const currentRate = await storage.getExchangeRate(
+      from as LoyaltyProgram, 
+      to as LoyaltyProgram
+    );
+    
+    if (!currentRate) {
+      return res.status(404).json({ message: "Exchange rate not found" });
+    }
+    
+    // Generate historical data with small variations
+    const rateValue = Number(currentRate.rate);
+    const history = generateHistoricalRateData(
+      Number(days), 
+      from as string, 
+      to as string, 
+      rateValue
+    );
+    
+    res.json(history);
+  } catch (error) {
+    console.error("Error fetching exchange rate history:", error);
+    res.status(500).json({ message: "Failed to fetch exchange rate history" });
+  }
+});
+
+// Get all loyalty program information with verification details
   app.get("/api/loyalty-programs/info", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
