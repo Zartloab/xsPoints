@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Redirect } from 'wouter';
+import { Redirect, Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,6 +123,14 @@ export default function StorytellerPage() {
         overlayOpacity={0.6}
         pattern="waves"
         height="md"
+        actionButton={
+          <Button 
+            className="bg-white/90 text-blue-700 hover:bg-white"
+            onClick={() => setIsShareOpen(true)}
+          >
+            Share Stories <Share2 className="ml-2 h-4 w-4" />
+          </Button>
+        }
       >
         <div className="flex flex-wrap gap-3 mt-2">
           <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center">
