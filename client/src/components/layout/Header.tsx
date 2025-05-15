@@ -137,6 +137,12 @@ export default function Header() {
                   <span className="ml-2 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
                 </DropdownMenuItem>
               </Link>
+              <Link href="/conversion-wizard">
+                <DropdownMenuItem className="cursor-pointer">
+                  <span>Conversion Wizard</span>
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">New</span>
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuContent>
           </DropdownMenu>
           
