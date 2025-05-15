@@ -62,7 +62,8 @@ interface AdminUser {
   tokenBalance: number | null;
 }
 
-interface AdminUserDetails extends AdminUser {
+interface AdminUserDetails {
+  user: AdminUser;
   wallets: AdminWallet[];
   transactions: AdminTransaction[];
 }

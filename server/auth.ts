@@ -30,7 +30,9 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Middleware to ensure user has admin role
-export function ensureAdmin(req: any, res: any, next: any) {
+import { Request, Response, NextFunction } from "express";
+
+export function ensureAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Not authenticated" });
   }
@@ -130,11 +132,11 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string }) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid username or password" });
       
-      req.login(user, (err) => {
+      req.login(user, (err: Error | null) => {
         if (err) return next(err);
         // Return user object without password
         const { password, ...userWithoutPassword } = user;
