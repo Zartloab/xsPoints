@@ -11,8 +11,11 @@ import ConnectedAccounts from '@/components/account/ConnectedAccounts';
 import MobileHomePage from '@/components/mobile/MobileHomePage';
 import PointsTranslator from '@/components/PointsTranslator';
 import MiniRecommendationPanel from '@/components/recommendations/MiniRecommendationPanel';
+import { Banner } from '@/components/ui/banner';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Wallet } from '@shared/schema';
+import { ArrowRight, Coins } from 'lucide-react';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -38,6 +41,27 @@ export default function HomePage() {
   // Desktop layout
   return (
     <>
+      {/* Welcome Banner */}
+      <Banner
+        title={`Welcome back, ${user?.username || 'User'}!`}
+        subtitle="Manage your loyalty points, perform conversions, and discover the best value for your points"
+        gradientColors={['from-blue-700', 'to-blue-500']}
+        pattern="grid"
+        height="md"
+        actionButton={
+          <Button className="bg-white/90 text-blue-700 hover:bg-white">
+            Discover New Features <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        }
+      >
+        <div className="mt-4 flex space-x-2">
+          <div className="flex items-center bg-blue-600/30 backdrop-blur-sm rounded-full pl-2 pr-3 py-1 text-sm text-white">
+            <Coins className="h-4 w-4 mr-1.5" /> 
+            <span>Earn free points with daily check-ins</span>
+          </div>
+        </div>
+      </Banner>
+      
       {/* Wallet Cards Section */}
       <section className="mb-8">
         <DashboardWallets />

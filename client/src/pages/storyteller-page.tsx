@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { LoyaltyProgram } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { Banner } from '@/components/ui/banner';
 import { Coins, BookOpen, DollarSign, Share2, Gift, Utensils, Plane, MapPin, Ticket } from 'lucide-react';
 
 // Define the types for contextual stories
@@ -115,13 +116,32 @@ export default function StorytellerPage() {
   
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-2 flex items-center">
-        <BookOpen className="mr-2 h-7 w-7" />
-        Contextual Point Value Storyteller
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        Discover what your loyalty points are actually worth in real-world terms
-      </p>
+      <Banner
+        title="Contextual Point Value Storyteller"
+        subtitle="Discover what your loyalty points are actually worth in real-world terms"
+        gradientColors={['from-emerald-600', 'to-teal-500']}
+        pattern="waves"
+        height="md"
+      >
+        <div className="flex flex-wrap gap-3 mt-2">
+          <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center">
+            <Plane className="h-4 w-4 mr-1.5" />
+            <span className="text-sm">Travel</span>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center">
+            <Utensils className="h-4 w-4 mr-1.5" />
+            <span className="text-sm">Dining</span>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center">
+            <Gift className="h-4 w-4 mr-1.5" />
+            <span className="text-sm">Shopping</span>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center">
+            <Ticket className="h-4 w-4 mr-1.5" />
+            <span className="text-sm">Experiences</span>
+          </div>
+        </div>
+      </Banner>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Input form */}

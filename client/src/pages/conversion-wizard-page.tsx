@@ -2,8 +2,10 @@ import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Redirect } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import IntuitiveConversionWizard from '@/components/transaction/IntuitiveConversionWizard';
-import { ArrowRightLeft, Info, Lightbulb, Check } from 'lucide-react';
+import { Banner } from '@/components/ui/banner';
+import { ArrowRightLeft, Info, Lightbulb, Check, ChevronRight } from 'lucide-react';
 
 export default function ConversionWizardPage() {
   const { user } = useAuth();
@@ -15,13 +17,18 @@ export default function ConversionWizardPage() {
   
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-2 flex items-center">
-        <ArrowRightLeft className="mr-2 h-7 w-7" />
-        Intuitive Point Conversion
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        Convert your loyalty points between programs with our interactive wizard
-      </p>
+      <Banner
+        title="Intuitive Point Conversion"
+        subtitle="Convert your loyalty points between programs with our step-by-step wizard"
+        gradientColors={['from-blue-600', 'to-indigo-500']}
+        pattern="dots"
+        height="md"
+        actionButton={
+          <Button className="bg-white text-blue-600 hover:bg-blue-50">
+            Learn About Conversions <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        }
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main conversion wizard */}
