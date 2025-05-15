@@ -24,7 +24,8 @@ import {
   Trophy,
   Sparkles,
   Route,
-  Menu
+  Menu,
+  BookOpen
 } from 'lucide-react';
 
 export default function Header() {
@@ -241,6 +242,15 @@ export default function Header() {
                 <DropdownMenuItem className="cursor-pointer">
                   <Route size={16} className="mr-2" />
                   Loyalty Journey
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/storyteller">
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen size={16} className="mr-2" />
+                  <div className="flex items-center">
+                    <span>Point Value Storyteller</span>
+                    <span className="ml-2 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
+                  </div>
                 </DropdownMenuItem>
               </Link>
               

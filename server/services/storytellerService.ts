@@ -76,12 +76,28 @@ export async function generateContextualStories(
     });
 
     // Parse and return the response
-    const result = JSON.parse(response.choices[0].message.content) as StorytellerResponse;
+    if (!response.choices[0].message.content) {
+      console.warn("No content in OpenAI response, using fallback");
+      return generateFallbackResponse(points, program);
+    }
     
-    // Ensure dollar value is properly formatted
-    result.dollarValue = `$${dollarValue.toFixed(2)}`;
-    
-    return result;
+    try {
+      const result = JSON.parse(response.choices[0].message.content) as StorytellerResponse;
+      
+      // Validate response structure
+      if (!result.stories || !Array.isArray(result.stories) || result.stories.length === 0) {
+        console.warn("Invalid response structure from OpenAI, using fallback");
+        return generateFallbackResponse(points, program);
+      }
+      
+      // Ensure dollar value is properly formatted
+      result.dollarValue = `$${dollarValue.toFixed(2)}`;
+      
+      return result;
+    } catch (parseError) {
+      console.error("Error parsing OpenAI response:", parseError);
+      return generateFallbackResponse(points, program);
+    }
   } catch (error) {
     console.error("Error generating contextual stories:", error);
     return generateFallbackResponse(points, program);
