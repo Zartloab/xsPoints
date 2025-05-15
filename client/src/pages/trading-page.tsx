@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Banner } from "@/components/ui/banner";
 import {
   Dialog,
   DialogContent,
@@ -242,21 +243,36 @@ export default function TradingPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">P2P Trading</h1>
-          <p className="text-muted-foreground">
-            Trade your loyalty points directly with other users.
-          </p>
+      <Banner
+        title="P2P Trading Marketplace"
+        subtitle="Exchange your loyalty points directly with other users at your preferred rates"
+        gradientColors={['from-purple-700', 'to-indigo-500']}
+        pattern="dots"
+        height="md"
+        align="center"
+        actionButton={
+          <Button 
+            onClick={() => setCreateTradeOpen(true)}
+            className="bg-white/90 text-purple-700 hover:bg-white flex items-center"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Trade Offer
+          </Button>
+        }
+      >
+        <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          <div className="bg-purple-600/30 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-white">
+            Set custom rates
+          </div>
+          <div className="bg-purple-600/30 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-white">
+            No platform fees
+          </div>
+          <div className="bg-purple-600/30 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-white">
+            Secure transaction
+          </div>
         </div>
-        <Button 
-          onClick={() => setCreateTradeOpen(true)}
-          className="flex items-center"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Trade Offer
-        </Button>
-      </div>
+      </Banner>
+      
 
       <Tabs defaultValue="marketplace" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
