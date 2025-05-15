@@ -10,6 +10,7 @@ import { chatbotService, ChatMessage } from "./services/chatbotService";
 import { marketInsightsService } from "./services/marketInsightsService";
 import { pointsValuationService } from "./services/pointsValuationService";
 import { tradeAdvisorService } from "./services/tradeAdvisorService";
+import { generateContextualStories } from "./services/storytellerService";
 import type { Transaction, Wallet, User } from "@shared/schema";
 import { 
   convertPointsSchema, 
@@ -1889,6 +1890,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // User preference routes removed
+  
+  // Contextual Point Value Storyteller endpoint
+  app.post("/api/storyteller", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { points, program } = req.body;
+      
+      // Validate request data
+      if (!points || !program) {
+        return res.status(400).json({ message: "Points amount and program are required" });
+      }
+      
+      // Ensure points is a positive number
+      const pointsAmount = Number(points);
+      if (isNaN(pointsAmount) || pointsAmount <= 0) {
+        return res.status(400).json({ message: "Points must be a positive number" });
+      }
+      
+      // Generate contextual stories
+      const stories = await generateContextualStories(pointsAmount, program);
+      
+      res.json(stories);
+    } catch (error) {
+      console.error("Error generating contextual stories:", error);
+      res.status(500).json({ message: "Failed to generate contextual stories" });
+    }
+  });
   
   // Create HTTP server
   const httpServer = createServer(app);
