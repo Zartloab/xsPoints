@@ -117,7 +117,7 @@ export default function Header() {
           {/* Explore Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className={`flex items-center font-medium ${
-              ['/explorer', '/loyalty-journey'].includes(location) ? activeClass : inactiveClass
+              ['/explorer', '/loyalty-journey', '/storyteller'].includes(location) ? activeClass : inactiveClass
             } cursor-pointer`}>
               <BarChart3 size={16} />
               <span className="mx-1">Explore</span>
@@ -129,6 +129,12 @@ export default function Header() {
               </Link>
               <Link href="/loyalty-journey">
                 <DropdownMenuItem className="cursor-pointer">Loyalty Journey</DropdownMenuItem>
+              </Link>
+              <Link href="/storyteller">
+                <DropdownMenuItem className="cursor-pointer">
+                  <span>Point Value Storyteller</span>
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">New</span>
+                </DropdownMenuItem>
               </Link>
             </DropdownMenuContent>
           </DropdownMenu>

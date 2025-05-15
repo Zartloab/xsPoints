@@ -23,6 +23,7 @@ import MarketplacePage from "@/pages/marketplace-page";
 import ExchangeRatesPage from "@/pages/exchange-rates-page";
 import RateVerificationPage from "@/pages/rate-verification-page";
 import AdminDashboard from "@/pages/admin-dashboard";
+import StorytellerPage from "@/pages/storyteller-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { usePreferredLayout } from "@/hooks/use-mobile";
@@ -48,6 +49,7 @@ function Router() {
       <ProtectedRoute path="/marketplace" component={() => <MarketplacePage />} />
       <ProtectedRoute path="/exchange-rates" component={() => <ExchangeRatesPage />} />
       <ProtectedRoute path="/rate-verification" component={() => <RateVerificationPage />} />
+      <ProtectedRoute path="/storyteller" component={() => <StorytellerPage />} />
       <ProtectedRoute path="/admin" component={() => <AdminDashboard />} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

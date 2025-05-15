@@ -12,7 +12,7 @@ import { LoyaltyProgram } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import MainLayout from '@/components/layout/MainLayout';
-import { Coins, BookOpen, DollarSign, Share2, Gift, Restaurant, Plane, MapPin, Ticket } from 'lucide-react';
+import { Coins, BookOpen, DollarSign, Share2, Gift, Utensils, Plane, MapPin, Ticket } from 'lucide-react';
 
 // Define the types for contextual stories
 interface ContextualStory {
@@ -52,7 +52,7 @@ export default function StorytellerPage() {
       case 'travel':
         return <Plane className="h-5 w-5" />;
       case 'dining':
-        return <Restaurant className="h-5 w-5" />;
+        return <Utensils className="h-5 w-5" />;
       case 'shopping':
         return <Gift className="h-5 w-5" />;
       case 'experiences':
