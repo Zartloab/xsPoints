@@ -118,7 +118,7 @@ export default function Header() {
           {/* Explore Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className={`flex items-center font-medium ${
-              ['/explorer', '/loyalty-journey', '/storyteller'].includes(location) ? activeClass : inactiveClass
+              ['/explorer', '/loyalty-journey', '/storyteller', '/conversion-wizard'].includes(location) ? activeClass : inactiveClass
             } cursor-pointer`}>
               <BarChart3 size={16} />
               <span className="mx-1">Explore</span>
