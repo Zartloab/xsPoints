@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Redirect } from 'wouter';
+import { Redirect, Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import IntuitiveConversionWizard from '@/components/transaction/IntuitiveConversionWizard';
@@ -25,9 +25,11 @@ export default function ConversionWizardPage() {
         pattern="dots"
         height="md"
         actionButton={
-          <Button className="bg-white text-blue-600 hover:bg-blue-50">
-            Learn About Conversions <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
+          <Link href="/tutorial">
+            <Button className="bg-white text-blue-600 hover:bg-blue-50">
+              Learn About Conversions <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         }
       />
       

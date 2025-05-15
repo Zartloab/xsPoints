@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { usePreferredLayout } from '@/hooks/use-mobile';
+import { Link } from 'wouter';
 import DashboardWallets from '@/components/dashboard/DashboardWallets';
 import MembershipTierCard from '@/components/dashboard/MembershipTierCard';
 import ConversionForm from '@/components/transaction/ConversionForm';
@@ -50,9 +51,11 @@ export default function HomePage() {
         pattern="grid"
         height="md"
         actionButton={
-          <Button className="bg-white/90 text-blue-700 hover:bg-white">
-            Discover New Features <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <Link href="/tutorial">
+            <Button className="bg-white/90 text-blue-700 hover:bg-white">
+              Discover New Features <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         }
       >
         <div className="mt-4 flex space-x-2">
